@@ -83,7 +83,7 @@ function shell() {
       const list = h('div', { class: 'side-nav', id, hidden: !open },
         inv ? inventory.els.inv : label === 'Speicher' ? inventory.els.ds : label === 'Netzwerk' ? inventory.els.pg : null,
         items.filter(([, , key]) => session.role === 'admin' || (key !== 'files' && key !== 'access')).map(([t, href, key, ic]) =>
-          h('a', { href, 'data-key': key, 'aria-label': t, class: inv && key !== 'console' ? 'nav-flat' : null }, icon(ic, { cls: 'nav-icon' }), h('span', { class: 'nav-text' }, t))));
+          h('a', { href, 'data-key': key, 'aria-label': t, class: inv ? 'nav-flat' : null }, icon(ic, { cls: 'nav-icon' }), h('span', { class: 'nav-text' }, t))));
       const head = h('button', { class: 'nav-label', type: 'button', 'aria-expanded': String(open), 'aria-controls': id, 'data-group': label },
         icon(gi, { cls: 'label-icon' }), h('span', { class: 'nav-label-text' }, label), icon('chevron-down', { cls: 'chev' }));
       head.addEventListener('click', () => setGroup(head, list, head.getAttribute('aria-expanded') !== 'true'));
