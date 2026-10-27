@@ -34,12 +34,20 @@ type Server struct {
 	AdminGroup string
 	Secure     bool // Cookies nur über TLS
 	Audit      *log.Logger
+	Access     *Access
+	Events     *EventLog
 	Version    string
 }
 
 type ctxKey struct{}
 
 func (s *Server) Handler() http.Handler {
+	if s.Access == nil {
+		s.Access = NewAccess(s.Host)
+	}
+	if s.Events == nil {
+		s.Events = NewEventLog(s.Host)
+	}
 	mux := http.NewServeMux()
 	api := func(pattern string, h http.HandlerFunc) { mux.Handle(pattern, s.protect(h)) }
 
@@ -151,6 +159,10 @@ func (s *Server) Handler() http.Handler {
 	api("GET /api/log", s.log)
 	api("GET /api/log/follow", s.followLog)
 
+	api("GET /api/events", s.events)
+	api("GET /api/access", s.accessGet)
+	api("PUT /api/access", s.accessPut)
+
 	api("GET /api/jobs", s.jobList)
 	api("GET /api/jobs/{id}/stream", s.jobStream)
 	api("POST /api/jobs/{id}/cancel", s.jobCancel)
@@ -215,6 +227,11 @@ func (s *Server) protect(h http.HandlerFunc) http.Handler {
 			jsonErr(w, http.StatusForbidden, "CSRF-Token fehlt oder ist ungültig")
 			return
 		}
+		if ok, why := s.Access.For(sess.User).allowed(r); !ok {
+			s.Events.Add(AuditEvent{User: sess.User, Addr: clientAddr(r), Kind: "verweigert", Result: "fehler", Text: r.Method + " " + r.URL.Path, Error: why})
+			jsonErr(w, http.StatusForbidden, "Keine Berechtigung: "+why)
+			return
+		}
 		h(w, r.WithContext(withSession(r.Context(), sess)))
 	})
 }
@@ -249,6 +266,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		s.Sessions.Fail(addr)
 		s.Audit.Printf("login fehlgeschlagen user=%q addr=%s", req.User, addr)
+		s.Events.Add(AuditEvent{User: req.User, Addr: addr, Kind: "anmeldung", Result: "fehler", Text: "Anmeldung fehlgeschlagen"})
 		time.Sleep(700 * time.Millisecond)
 		jsonErr(w, http.StatusUnauthorized, "Benutzername oder Passwort falsch – oder das Konto ist nicht in der Gruppe "+s.AdminGroup+".")
 		return
@@ -256,6 +274,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	sess := s.Sessions.Create(req.User, addr)
 	http.SetCookie(w, &http.Cookie{Name: cookieName, Value: sess.ID, Path: "/", HttpOnly: true, Secure: s.Secure, SameSite: http.SameSiteStrictMode})
 	s.Audit.Printf("login user=%s addr=%s", req.User, addr)
+	s.Events.Add(AuditEvent{User: req.User, Addr: addr, Kind: "anmeldung", Result: "ok", Text: "Anmeldung"})
 	s.writeSession(w, r, sess)
 }
 
@@ -287,7 +306,8 @@ func (s *Server) session(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) writeSession(w http.ResponseWriter, r *http.Request, sess *auth.Session) {
 	host := s.Host.Hostname(r.Context())
-	writeJSON(w, map[string]any{"user": sess.User, "csrf": sess.CSRF, "hostname": host, "demo": s.Host.Demo, "version": s.Version})
+	g := s.Access.For(sess.User)
+	writeJSON(w, map[string]any{"user": sess.User, "csrf": sess.CSRF, "hostname": host, "demo": s.Host.Demo, "version": s.Version, "role": g.Role, "vms": g.VMs})
 }
 
 // ---- Hilfsfunktionen ----

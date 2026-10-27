@@ -25,6 +25,12 @@ import (
 
 func newTestServer(t *testing.T) (*httptest.Server, *http.Client) {
 	t.Helper()
+	_, ts, c := newTestServerS(t)
+	return ts, c
+}
+
+func newTestServerS(t *testing.T) (*Server, *httptest.Server, *http.Client) {
+	t.Helper()
 	d, root, err := obsd.NewDemo()
 	if err != nil {
 		t.Fatal(err)
@@ -39,7 +45,7 @@ func newTestServer(t *testing.T) (*httptest.Server, *http.Client) {
 	ts := httptest.NewServer(s.Handler())
 	t.Cleanup(ts.Close)
 	jar, _ := cookiejar.New(nil)
-	return ts, &http.Client{Jar: jar}
+	return s, ts, &http.Client{Jar: jar}
 }
 
 func login(t *testing.T, ts *httptest.Server, c *http.Client) string {

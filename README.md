@@ -27,6 +27,7 @@ Auf dem Host wird außer dem Basissystem nichts benötigt.
 | Netzwerk | Schnittstellen mit Adressen, veb-Mitgliedern und Status, up/down, netstart, hostname.if aus Vorlagen (DHCP, statisch, veb, vport, VLAN, WireGuard), Routen, Resolver | `ifconfig`, `netstat -rn`, `/etc/netstart` |
 | Paketfilter | Status, Regeln, Tabellen (Adressen hinzufügen/entfernen), States, Regelsatz laden, pf an/aus | `pfctl` |
 | Konfiguration | 24 freigegebene Dateien + alle `/etc/hostname.*`; Syntaxprüfung vor dem Speichern, Sicherung, Konflikterkennung, „Übernehmen“-Aktion | `pfctl -nf`, `vmd -n`, `httpd -n`, `doas -C`, `sshd -t`, … |
+| Ereignisse & Rollen | Ereignisprotokoll (Anmeldungen, Aktionen, Ablehnungen; filterbar, die letzten 2000 bleiben erhalten); Rollen Administrator, Operator, Betrachter mit Eingrenzung auf bestimmte VMs | `/var/maar/access.json`, `/var/maar/events.jsonl` |
 | Protokolle | `/var/log/*` lesen, filtern, live verfolgen | Server-Sent Events |
 
 Lang laufende Befehle (Pakete, Patches, Upgrades, ISO-Downloads) laufen als **Aufgaben** im
@@ -120,6 +121,18 @@ Die Absicht steht in `/var/maar/network.json`, alles andere wird daraus erzeugt 
 | `/etc/pf.maar.conf` | Anker `maar` (NAT, DHCP/DNS zum Gateway, Regeln je VM als `quick` ohne Richtung); `anchor` + `load anchor` am Ende von pf.conf |
 
 Bestehende Switches aus vm.conf werden als „vorgefunden“ übernommen; erst beim Speichern schreibt maar ihre Dateien. Ungetaggte Uplinks dürfen keine eigene IP haben. Deklariert dhcpd.conf ein Subnetz schon außerhalb des maar-Bereichs, bricht der Abgleich mit einem Hinweis ab. Ungeprüft auf echter Hardware: pf mit `link1` auf veb-Ports, Interface-Gruppen über `group` in vm.conf, unbound mit zusätzlichen `interface`-Zeilen.
+
+## Rollen und Ereignisse
+
+Die Gruppe (`-group`, Standard `wheel`) entscheidet, wer sich anmelden darf; die Rolle, was danach erlaubt ist. Konten ohne Eintrag erhalten die Standardrolle (anfangs Administrator).
+
+| Rolle | Darf |
+|---|---|
+| Administrator | alles |
+| Operator | lesen; zugewiesene VMs starten, herunterfahren, pausieren, per Konsole bedienen; Snapshots anlegen und zurücksetzen |
+| Betrachter | nur lesen – ohne Konfigurationsdateien, Schlüssel, Host-Shell und Rollenverwaltung |
+
+Ist ein Konto auf VMs eingegrenzt, sieht es nur diese in der VM-Liste und kann nur auf sie zugreifen (die Übersicht nennt weiterhin alle Namen). Eine Änderung der eigenen Rolle, die den Administrator-Zugriff entzieht, wird abgelehnt. Jede Anmeldung, verändernde Aktion und verweigerte Anfrage landet im Ereignisprotokoll und im Syslog. Aufträge (Pakete, Backups, Netz) stehen zusätzlich mit ihrer Ausgabe in der Aufgabenleiste; deren Ende wird noch nicht als eigenes Ereignis geführt.
 
 ## Ausprobieren ohne OpenBSD
 

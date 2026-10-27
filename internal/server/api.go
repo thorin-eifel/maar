@@ -34,7 +34,13 @@ func (s *Server) audit(r *http.Request, err error, format string, a ...any) {
 	if err != nil {
 		status = "fehler: " + strings.ReplaceAll(err.Error(), "\n", " ")
 	}
-	s.Audit.Printf("user=%s addr=%s %s → %s", user, clientAddr(r), fmt.Sprintf(format, a...), status)
+	text := fmt.Sprintf(format, a...)
+	s.Audit.Printf("user=%s addr=%s %s → %s", user, clientAddr(r), text, status)
+	ev := AuditEvent{User: user, Addr: clientAddr(r), Kind: "aktion", Result: "ok", Text: text}
+	if err != nil {
+		ev.Result, ev.Error = "fehler", strings.ReplaceAll(err.Error(), "\n", " ")
+	}
+	s.Events.Add(ev)
 }
 
 type msg struct {
@@ -144,6 +150,15 @@ func (s *Server) power(w http.ResponseWriter, r *http.Request) {
 func (s *Server) vms(w http.ResponseWriter, r *http.Request) {
 	v, err := s.Host.VMs(r.Context())
 	if err == nil {
+		if g := s.Access.For(sessionFrom(r).User); len(g.VMs) > 0 && g.Role != "admin" {
+			keep := v.VMs[:0:0]
+			for _, m := range v.VMs {
+				if contains(g.VMs, m.Name) {
+					keep = append(keep, m)
+				}
+			}
+			v.VMs = keep
+		}
 		viewers := s.Hub.Viewers()
 		res := map[string]any{"overview": v, "viewers": viewers}
 		writeJSON(w, res)

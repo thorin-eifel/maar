@@ -8,7 +8,7 @@ const NAV = [
   ['Virtualisierung', [['03', 'Virtuelle Maschinen', '#/vms', 'vms'], ['04', 'Templates', '#/templates', 'templates'], ['05', 'Backup', '#/backup', 'backup'], ['06', 'Konsolen', '#/console', 'console']]],
   ['System', [['07', 'Dienste', '#/services', 'services'], ['08', 'Pakete & Updates', '#/packages', 'packages'], ['09', 'Benutzer', '#/users', 'users'], ['10', 'Prozesse', '#/processes', 'processes'], ['11', 'Speicher', '#/storage', 'storage'], ['12', 'System', '#/system', 'system']]],
   ['Netz', [['13', 'VM-Netze', '#/vnet', 'vnet'], ['14', 'Netzwerk', '#/network', 'network'], ['15', 'Paketfilter', '#/firewall', 'firewall']]],
-  ['Werkzeuge', [['16', 'Konfiguration', '#/files', 'files'], ['17', 'Protokolle', '#/logs', 'logs']]],
+  ['Werkzeuge', [['16', 'Konfiguration', '#/files', 'files'], ['17', 'Protokolle', '#/logs', 'logs'], ['18', 'Ereignisse & Rollen', '#/access', 'access']]],
 ];
 
 const app = document.getElementById('app');
@@ -52,7 +52,7 @@ function shell() {
   const nav = h('nav', { class: 'side-nav-wrap', 'aria-label': 'Hauptnavigation' },
     NAV.map(([label, items]) => [
       h('p', { class: 'nav-label' }, label),
-      h('div', { class: 'side-nav' }, items.map(([n, t, href, key]) => h('a', { href, 'data-key': key }, h('span', null, n), t))),
+      h('div', { class: 'side-nav' }, items.filter(([, , , key]) => session.role === 'admin' || key !== 'files').map(([n, t, href, key]) => h('a', { href, 'data-key': key }, h('span', null, n), t))),
     ]));
   const logout = h('button', { class: 'mini-btn', type: 'button' }, 'Abmelden');
   logout.addEventListener('click', async () => {
@@ -71,7 +71,7 @@ function shell() {
       h('p', { class: 'side-version' }, `OpenBSD Verwaltung · ${session.hostname}${session.demo ? ' · Demo' : ''}`),
       nav,
       h('div', { class: 'side-bottom' },
-        h('div', null, 'Angemeldet als ', h('strong', null, session.user)),
+        h('div', null, 'Angemeldet als ', h('strong', null, session.user), session.role && session.role !== 'admin' ? ` (${session.role})` : ''),
         h('div', null, logout),
         h('div', { class: 'mono' }, `maar ${session.version}`))),
     h('div', { class: 'page' },
@@ -98,6 +98,7 @@ const routes = {
   firewall: () => import('./views/firewall.js'),
   files: () => import('./views/files.js'),
   logs: () => import('./views/logs.js'),
+  access: () => import('./views/access.js'),
 };
 
 let routeSeq = 0;
