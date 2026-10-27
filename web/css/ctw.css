@@ -382,3 +382,12 @@ a.tab{display:inline-flex;align-items:center}
 
 .title-icon{width:.95em;height:.95em;margin-right:.45em;vertical-align:-.1em;color:var(--muted);stroke-width:1.8}
 .empty-icon{display:block;width:28px;height:28px;margin:0 auto 10px;opacity:.55}
+
+/* Live-Vorschau der VM-Konsole */
+.cp-stage{position:relative;aspect-ratio:4/3;overflow:hidden;background:var(--term-bg);border:1px solid var(--line);border-radius:4px}
+.cp-term{position:absolute;top:0;left:0;transform-origin:0 0;pointer-events:none}
+.cp-open{position:absolute;inset:0;display:grid;place-items:center;text-decoration:none;color:#fff;background:transparent;transition:background var(--fast)}
+.cp-open span{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:4px;background:rgba(0,0,0,.65);font-size:13px;font-weight:600;opacity:0;transition:opacity var(--fast)}
+.cp-open:hover,.cp-open:focus-visible{background:rgba(0,0,0,.25)}
+.cp-open:hover span,.cp-open:focus-visible span{opacity:1}
+.cp-bar{display:flex;align-items:center;gap:8px;margin-top:8px}

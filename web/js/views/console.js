@@ -1,7 +1,7 @@
 import { h, clear, pageHead, panel, table, vmStatePill, loading, toastError } from '../ui.js';
 import { get, wsURL, session } from '../api.js';
 
-function termTheme() {
+export function termTheme() {
   const css = getComputedStyle(document.documentElement);
   return {
     background: css.getPropertyValue('--term-bg').trim() || '#1d3a44',

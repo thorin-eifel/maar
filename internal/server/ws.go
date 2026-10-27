@@ -40,8 +40,12 @@ func (s *Server) vmConsole(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	s.audit(r, nil, "console vm %s (%s)", name, tty)
-	s.pumpTerm(w, r, term, "Verbunden mit "+name+" über "+tty+" (115200 Baud). Konsole wird mit anderen Zuschauern geteilt.")
+	// watch=1: stille, nur lesende Vorschau (VM-Seite) – nicht ins Ereignisprotokoll, keine Eingaben.
+	watch := r.URL.Query().Get("watch") == "1"
+	if !watch {
+		s.audit(r, nil, "console vm %s (%s)", name, tty)
+	}
+	s.pumpTerm(w, r, term, "Verbunden mit "+name+" über "+tty+" (115200 Baud). Konsole wird mit anderen Zuschauern geteilt.", watch)
 }
 
 // shellConsole startet eine Login-Shell als angemeldeter Benutzer.
@@ -70,10 +74,10 @@ func (s *Server) shellConsole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.audit(r, nil, "console shell")
-	s.pumpTerm(w, r, term, "")
+	s.pumpTerm(w, r, term, "", false)
 }
 
-func (s *Server) pumpTerm(w http.ResponseWriter, r *http.Request, term console.Term, banner string) {
+func (s *Server) pumpTerm(w http.ResponseWriter, r *http.Request, term console.Term, banner string, readOnly bool) {
 	defer term.Close()
 	// Accept prüft standardmäßig, dass Origin und Host übereinstimmen.
 	c, err := websocket.Accept(w, r, &websocket.AcceptOptions{CompressionMode: websocket.CompressionDisabled})
@@ -102,6 +106,9 @@ func (s *Server) pumpTerm(w http.ResponseWriter, r *http.Request, term console.T
 			typ, data, err := c.Read(ctx)
 			if err != nil {
 				return
+			}
+			if readOnly {
+				continue
 			}
 			if typ == websocket.MessageBinary {
 				if _, err := term.Write(data); err != nil {

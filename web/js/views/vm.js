@@ -8,6 +8,7 @@ import { deployDialog, toTemplateDialog } from '../deploy.js';
 import { backupNowDialog, scheduleText } from './backup.js';
 import { nicDialog, firewallDialog } from './vnet.js';
 import { vmSettingsDialog } from '../vmsettings.js';
+import { consolePreview } from './consolepreview.js';
 import { act, startFromISODialog, editBlockDialog, removeVMDialog, hardKillDialog } from '../vmactions.js';
 
 const enc = encodeURIComponent;
@@ -32,7 +33,7 @@ export default {
     const isAdmin = session.role === 'admin', canPower = isAdmin || session.role === 'operator';
     const head = h('div'), tabsEl = h('div', { class: 'tabs', role: 'tablist', 'aria-label': 'Bereiche der VM' }), content = h('div', { class: 'content' }, loading());
     main.append(head, tabsEl, content);
-    let d = null, cleanups = [], range = '1h';
+    let d = null, cleanups = [], range = '1h', preview = null;
 
     const stop = () => { cleanups.forEach(f => { try { f(); } catch { /* egal */ } }); cleanups = []; };
 
@@ -102,16 +103,21 @@ export default {
       const last = k => { const p = m?.series?.[k]; return p?.length ? p[p.length - 1].v : null; };
       const cpu = last(`vm.${name}.cpu`), mem = last(`vm.${name}.mem`);
       const cpuMax = (vm.vcpus || 1) * 100;
+      // Die Vorschau lebt über Neuzeichnen hinweg (sonst Flackern); sie endet mit der laufenden VM.
+      if (running && session.role !== 'viewer') preview ||= consolePreview(name);
+      else if (preview) { preview.destroy(); preview = null; }
       clear(content,
         d.alerts.length ? alertsBox(d.alerts) : null,
         h('div', { class: 'metrics' },
-          metric('Status', vm.state === 'running' ? 'Läuft' : vm.state === 'paused' ? 'Pausiert' : 'Gestoppt', running ? `${d.viewers} Konsolenzuschauer` : 'ausgeschaltet'),
+          metric('Status', vm.state === 'running' ? 'Läuft' : vm.state === 'paused' ? 'Pausiert' : 'Gestoppt', running ? `${Math.max(0, d.viewers - (preview ? 1 : 0))} Konsolenzuschauer` : 'ausgeschaltet'),
           metric('CPU', cpu === null ? '–' : pct(cpu), `von ${cpuMax} % (${vm.vcpus || 1} vCPU)`, cpu === null ? undefined : cpu / cpuMax * 100),
           metric('Speicher', mem === null ? '–' : bytes(mem), `zugewiesen ${vm.conf?.memory || vm.maxmem || '–'}`),
           metric('Snapshots', String(d.snapshots), d.backups.length ? `${d.backups.length} Sicherungsjob${d.backups.length === 1 ? '' : 's'}` : 'keine Sicherung geplant')),
         h('div', { class: 'grid-2' },
           panel('VM-Hardware', 'VM.CONF', h('div', { class: 'panel-body' }, hardwareList())),
           h('div', { class: 'content-stack' },
+            preview ? panel('Konsole', 'SERIELL · LIVE', h('div', { class: 'panel-body' }, preview.el),
+              h('a', { class: 'mini-btn', href: `#/console/vm/${enc(name)}`, target: '_blank', rel: 'noopener' }, icon('external'), 'Remote-Sitzung')) : null,
             panel('Netzwerk & Firewall', 'PORTGRUPPEN · PF', h('div', { class: 'panel-body' }, h('dl', { class: 'kv' },
               h('dt', null, 'Portgruppen'), h('dd', null, d.portGroups.length ? d.portGroups.map(g => h('div', null, h('a', { href: `#/portgroup/${enc(g.name)}` }, g.name), h('span', { class: 'sub' }, `${g.vlan ? 'VLAN ' + g.vlan + ' · ' : ''}${g.gateway || 'reines L2'}`))) : '–'),
               h('dt', null, 'Firewall'), h('dd', null, `eingehend ${d.policy.in === 'deny' ? 'gesperrt' : 'offen'} · ausgehend ${d.policy.out === 'deny' ? 'gesperrt' : 'offen'}`, h('span', { class: 'sub' }, `${d.rules.length} Regel${d.rules.length === 1 ? '' : 'n'}`))))),
@@ -186,6 +192,6 @@ export default {
     await load();
     const off = onJobDone(() => setTimeout(() => { if (!document.querySelector('dialog')) load().catch(() => {}); }, 800));
     const t = setInterval(() => { if (!document.querySelector('dialog') && tab !== 'snapshots' && tab !== 'monitor') load().catch(() => {}); }, 20000);
-    return () => { stop(); off(); clearInterval(t); };
+    return () => { stop(); off(); clearInterval(t); if (preview) preview.destroy(); };
   },
 };
