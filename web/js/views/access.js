@@ -13,11 +13,11 @@ function eventsPanel() {
   const rows = h('div', { class: 'panel-body flush' }, loading());
   const user = h('input', { placeholder: 'Benutzer', 'aria-label': 'Benutzer', size: 12 });
   const text = h('input', { type: 'search', placeholder: 'Suchen …', 'aria-label': 'Suchen' });
-  const kind = h('select', { 'aria-label': 'Art' }, h('option', { value: '' }, 'alle Arten'), h('option', { value: 'aktion' }, 'Aktionen'), h('option', { value: 'anmeldung' }, 'Anmeldungen'), h('option', { value: 'verweigert' }, 'Verweigert'));
+  const kind = h('select', { 'aria-label': 'Art' }, h('option', { value: '' }, 'alle Arten'), h('option', { value: 'aktion' }, 'Aktionen'), h('option', { value: 'anmeldung' }, 'Anmeldungen'), h('option', { value: 'auftrag' }, 'Aufträge'), h('option', { value: 'verweigert' }, 'Verweigert'));
   const result = h('select', { 'aria-label': 'Ergebnis' }, h('option', { value: '' }, 'alle Ergebnisse'), h('option', { value: 'ok' }, 'erfolgreich'), h('option', { value: 'fehler' }, 'Fehler'));
   async function load() {
     const d = await get('/api/events' + q({ user: user.value.trim(), q: text.value.trim(), kind: kind.value, result: result.value, limit: 300 }));
-    const kinds = { aktion: ['info', 'Aktion'], anmeldung: ['off', 'Anmeldung'], verweigert: ['warn', 'verweigert'] };
+    const kinds = { aktion: ['info', 'Aktion'], anmeldung: ['off', 'Anmeldung'], auftrag: ['ok', 'Auftrag'], verweigert: ['warn', 'verweigert'] };
     clear(rows, table(['Zeit', 'Benutzer', 'Art', 'Ereignis', 'Ergebnis'], d.events.map(e => h('tr', null,
       h('td', { class: 'mono' }, dateTime(e.time)),
       h('td', null, h('span', { class: 'name' }, e.user), h('span', { class: 'sub mono' }, e.addr)),

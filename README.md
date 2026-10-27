@@ -132,7 +132,7 @@ Die Gruppe (`-group`, Standard `wheel`) entscheidet, wer sich anmelden darf; die
 | Operator | lesen; zugewiesene VMs starten, herunterfahren, pausieren, per Konsole bedienen; Snapshots anlegen und zurücksetzen |
 | Betrachter | nur lesen – ohne Konfigurationsdateien, Schlüssel, Host-Shell und Rollenverwaltung |
 
-Ist ein Konto auf VMs eingegrenzt, sieht es nur diese in der VM-Liste und kann nur auf sie zugreifen (die Übersicht nennt weiterhin alle Namen). Eine Änderung der eigenen Rolle, die den Administrator-Zugriff entzieht, wird abgelehnt. Jede Anmeldung, verändernde Aktion und verweigerte Anfrage landet im Ereignisprotokoll und im Syslog. Aufträge (Pakete, Backups, Netz) stehen zusätzlich mit ihrer Ausgabe in der Aufgabenleiste; deren Ende wird noch nicht als eigenes Ereignis geführt.
+Ist ein Konto auf VMs eingegrenzt, sieht es nur diese in der VM-Liste und kann nur auf sie zugreifen (die Übersicht nennt weiterhin alle Namen). Eine Änderung der eigenen Rolle, die den Administrator-Zugriff entzieht, wird abgelehnt. Jede Anmeldung, verändernde Aktion und verweigerte Anfrage landet im Ereignisprotokoll und im Syslog. Aufträge (Pakete, Backups, Netz) stehen mit ihrer Ausgabe in der Aufgabenleiste; ihr Ende erscheint als Ereignis „Auftrag beendet“ (mit Fehlertext, falls fehlgeschlagen). Unter „Leistung & Alarme“ lassen sich zusätzlich die Mail-Alarme „Zugriff verweigert“ und „Anmeldung fehlgeschlagen“ einschalten (standardmäßig aus; höchstens eine gleiche Mail je 30 Minuten).
 
 ## Ausprobieren ohne OpenBSD
 

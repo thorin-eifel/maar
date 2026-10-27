@@ -65,6 +65,8 @@ var EventKinds = map[string]string{
 	"service_failed": "Dienst ausgefallen",
 	"vm_stopped":     "VM unerwartet gestoppt",
 	"backup_failed":  "Sicherung fehlgeschlagen",
+	"access_denied":  "Zugriff verweigert (Rolle)",
+	"login_failed":   "Anmeldung fehlgeschlagen",
 }
 
 func DefaultAlertConfig() *AlertConfig {

@@ -5,6 +5,7 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"log"
 	"net"
@@ -48,6 +49,16 @@ func (s *Server) Handler() http.Handler {
 	if s.Events == nil {
 		s.Events = NewEventLog(s.Host)
 	}
+	s.Jobs.SetOnDone(func(i jobs.Info) {
+		ev := AuditEvent{User: i.User, Kind: "auftrag", Result: "ok", Text: "Auftrag " + i.ID + " beendet: " + i.Title}
+		switch i.State {
+		case jobs.Failed:
+			ev.Result, ev.Error = "fehler", strings.ReplaceAll(i.Error, "\n", " ")
+		case jobs.Canceled:
+			ev.Result, ev.Error = "fehler", "abgebrochen"
+		}
+		s.Events.Add(ev)
+	})
 	mux := http.NewServeMux()
 	api := func(pattern string, h http.HandlerFunc) { mux.Handle(pattern, s.protect(h)) }
 
@@ -229,6 +240,7 @@ func (s *Server) protect(h http.HandlerFunc) http.Handler {
 		}
 		if ok, why := s.Access.For(sess.User).allowed(r); !ok {
 			s.Events.Add(AuditEvent{User: sess.User, Addr: clientAddr(r), Kind: "verweigert", Result: "fehler", Text: r.Method + " " + r.URL.Path, Error: why})
+			s.alert("access_denied", sess.User, fmt.Sprintf("%s (%s) wurde verweigert: %s %s – %s", sess.User, clientAddr(r), r.Method, r.URL.Path, why))
 			jsonErr(w, http.StatusForbidden, "Keine Berechtigung: "+why)
 			return
 		}
@@ -267,6 +279,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		s.Sessions.Fail(addr)
 		s.Audit.Printf("login fehlgeschlagen user=%q addr=%s", req.User, addr)
 		s.Events.Add(AuditEvent{User: req.User, Addr: addr, Kind: "anmeldung", Result: "fehler", Text: "Anmeldung fehlgeschlagen"})
+		s.alert("login_failed", addr, fmt.Sprintf("Anmeldung als %q von %s fehlgeschlagen.", req.User, addr))
 		time.Sleep(700 * time.Millisecond)
 		jsonErr(w, http.StatusUnauthorized, "Benutzername oder Passwort falsch – oder das Konto ist nicht in der Gruppe "+s.AdminGroup+".")
 		return
@@ -359,4 +372,11 @@ func respond(w http.ResponseWriter, v any, err error) {
 		return
 	}
 	writeJSON(w, v)
+}
+
+// alert meldet ein Ereignis an die Mail-Benachrichtigung (falls aktiviert).
+func (s *Server) alert(kind, subject, message string) {
+	if s.Metrics != nil {
+		s.Metrics.Alerts.Event(kind, subject, message)
+	}
 }

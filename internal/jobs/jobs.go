@@ -94,6 +94,15 @@ type Manager struct {
 	mu   sync.Mutex
 	jobs map[string]*Job
 	seq  int
+
+	onDone func(Info)
+}
+
+// SetOnDone legt fest, was nach dem Ende jedes Auftrags aufgerufen wird.
+func (m *Manager) SetOnDone(fn func(Info)) {
+	m.mu.Lock()
+	m.onDone = fn
+	m.mu.Unlock()
 }
 
 func NewManager(r obsd.Runner) *Manager {
@@ -133,8 +142,15 @@ func (m *Manager) StartFunc(user, title, command string, fn func(ctx context.Con
 		default:
 			j.State = Done
 		}
+		info := j.Info
 		j.mu.Unlock()
 		j.Write([]byte{}) // Zuschauer über Ende informieren
+		m.mu.Lock()
+		done := m.onDone
+		m.mu.Unlock()
+		if done != nil {
+			done(info)
+		}
 	}()
 	return j
 }

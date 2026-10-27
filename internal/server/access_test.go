@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 )
 
 func do(t *testing.T, c *http.Client, method, url, csrf, body string) (int, string) {
@@ -104,6 +105,26 @@ func TestRolesAndEvents(t *testing.T) {
 	if _, out := do(t, c, "GET", ts.URL+"/api/events?q=vm+pause", csrf, ""); !strings.Contains(out, "vm pause web01") {
 		t.Errorf("Ereignis der Aktion fehlt: %s", out)
 	}
+	// Auftragsende und Alarm bei verweigertem Zugriff.
+	if code, out := do(t, c, "POST", ts.URL+"/api/packages/update", csrf, `{"names":[]}`); code != 200 {
+		t.Fatalf("Auftrag starten: %d %s", code, out)
+	}
+	var jobs string
+	for i := 0; i < 40 && !strings.Contains(jobs, "beendet"); i++ {
+		time.Sleep(250 * time.Millisecond)
+		_, jobs = do(t, c, "GET", ts.URL+"/api/events?kind=auftrag", csrf, "")
+	}
+	if !strings.Contains(jobs, "beendet") {
+		t.Errorf("Auftragsende fehlt im Protokoll: %s", jobs)
+	}
+	s.Metrics.Alerts.SetSettings([]string{"root"}, map[string]bool{"access_denied": true})
+	setGrant(Grant{User: "demo", Role: "viewer"})
+	do(t, c, "POST", vm+"web01/pause", csrf, "")
+	_, hist := s.Metrics.Alerts.Snapshot()
+	if len(hist) == 0 || hist[len(hist)-1].Rule != "access_denied" {
+		t.Errorf("kein Alarm bei verweigertem Zugriff: %+v", hist)
+	}
+	setGrant(Grant{User: "demo", Role: "admin"})
 	// Neustart des Servers behält das Protokoll.
 	if n := len(NewEventLog(s.Host).Query("", "", "", "", 10)); n == 0 {
 		t.Error("Protokoll nicht gespeichert")
