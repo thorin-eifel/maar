@@ -37,8 +37,13 @@ code,kbd,pre,.mono{font-family:var(--mono)}
 :root[data-theme="dark"] .logo{filter:invert(1) hue-rotate(180deg)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .logo{filter:invert(1) hue-rotate(180deg)}}
 .side-version{font:600 10px/1.5 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:29px 0 25px;overflow-wrap:anywhere}
-.nav-label,.eyebrow,.meta{font:700 10px/1.4 var(--mono);letter-spacing:.11em;text-transform:uppercase}
-.nav-label{color:var(--muted);margin:22px 0 10px}.nav-label:first-of-type{margin-top:0}
+.eyebrow,.meta{font:700 10px/1.4 var(--mono);letter-spacing:.11em;text-transform:uppercase}
+.nav-group{margin-top:14px}.nav-group:first-child{margin-top:0}
+.nav-label{appearance:none;background:none;border:0;width:100%;text-align:left;cursor:pointer;color:var(--muted);font:700 13px/1.4 var(--mono);letter-spacing:.1em;text-transform:uppercase;padding:6px 4px;margin:0 0 4px;border-radius:4px}
+.nav-label:hover,.nav-label:focus-visible{color:var(--ink);background:var(--surface)}
+.nav-label .nav-label-text{flex:1}
+.nav-label .chev{width:14px;height:14px;stroke-width:2.2;transition:transform var(--fast)}
+.nav-label[aria-expanded="false"] .chev{transform:rotate(-90deg)}
 .side-nav{display:flex;flex-direction:column;gap:1px}
 .side-nav a{display:flex;align-items:center;gap:12px;padding:8px 10px;margin-left:-10px;text-decoration:none;font-size:13px;border-radius:4px;transition:background var(--fast)}
 .side-nav a:hover,.side-nav a:focus-visible{background:var(--brand-teal-200);color:var(--brand-teal-900)}
@@ -356,7 +361,7 @@ a.tab{display:inline-flex;align-items:center}
 .tab{display:inline-flex;align-items:center;gap:.55em}
 .tab .icon{width:1.1em;height:1.1em}
 .nav-label{display:flex;align-items:center;gap:8px}
-.nav-label .label-icon{width:13px;height:13px;stroke-width:2}
+.nav-label .label-icon{width:15px;height:15px;stroke-width:2}
 .pill .pill-icon{width:1em;height:1em;stroke-width:2.2;margin-right:-1px}
 .toast strong{display:flex;align-items:center;gap:8px}
 .toast-icon{color:var(--accent);width:1.2em;height:1.2em}
@@ -367,3 +372,6 @@ a.tab{display:inline-flex;align-items:center}
 .tree-link[aria-current="page"] .tree-icon{color:inherit}
 .tree-icon.st-running{color:oklch(62% .15 150)}.tree-icon.st-paused{color:oklch(62% .12 240)}.tree-icon.st-offline{color:var(--action)}
 .metric .meta{display:flex;align-items:center;gap:7px}.metric-icon{width:14px;height:14px;stroke-width:2;color:var(--accent)}
+
+.side-nav[hidden]{display:none}
+@media(max-width:800px){.nav-label{display:none}.nav-group{display:contents}.side-nav[hidden]{display:flex}}

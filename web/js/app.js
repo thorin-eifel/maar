@@ -58,12 +58,32 @@ function glassToggle() {
   return b;
 }
 
+// Eingeklappte Menügruppen merkt sich der Browser.
+function loadCollapsed() {
+  try { return new Set(JSON.parse(localStorage.getItem('maar.nav.collapsed')) || []); } catch { return new Set(); }
+}
+
+function setGroup(head, list, open, persist = true) {
+  head.setAttribute('aria-expanded', String(open));
+  list.hidden = !open;
+  if (!persist) return;
+  const set = loadCollapsed();
+  open ? set.delete(head.dataset.group) : set.add(head.dataset.group);
+  try { localStorage.setItem('maar.nav.collapsed', JSON.stringify([...set])); } catch { /* privat */ }
+}
+
 function shell() {
+  const collapsed = loadCollapsed();
   const nav = h('nav', { class: 'side-nav-wrap', 'aria-label': 'Hauptnavigation' },
-    NAV.map(([label, gi, items]) => [
-      h('p', { class: 'nav-label' }, icon(gi, { cls: 'label-icon' }), label),
-      h('div', { class: 'side-nav' }, items.filter(([, , key]) => session.role === 'admin' || (key !== 'files' && key !== 'access')).map(([t, href, key, ic]) => h('a', { href, 'data-key': key, 'aria-label': t }, icon(ic, { cls: 'nav-icon' }), h('span', { class: 'nav-text' }, t)))),
-    ]));
+    NAV.map(([label, gi, items], gix) => {
+      const id = `nav-g${gix}`, open = !collapsed.has(label);
+      const list = h('div', { class: 'side-nav', id, hidden: !open },
+        items.filter(([, , key]) => session.role === 'admin' || (key !== 'files' && key !== 'access')).map(([t, href, key, ic]) => h('a', { href, 'data-key': key, 'aria-label': t }, icon(ic, { cls: 'nav-icon' }), h('span', { class: 'nav-text' }, t))));
+      const head = h('button', { class: 'nav-label', type: 'button', 'aria-expanded': String(open), 'aria-controls': id, 'data-group': label },
+        icon(gi, { cls: 'label-icon' }), h('span', { class: 'nav-label-text' }, label), icon('chevron-down', { cls: 'chev' }));
+      head.addEventListener('click', () => setGroup(head, list, head.getAttribute('aria-expanded') !== 'true'));
+      return h('div', { class: 'nav-group' }, head, list);
+    }));
   const logout = h('button', { class: 'mini-btn', type: 'button' }, icon('logout'), 'Abmelden');
   logout.addEventListener('click', async () => {
     try { await post('/api/logout'); } catch { /* egal */ }
@@ -160,7 +180,11 @@ async function route() {
   const navKey = { vm: 'vms', datastore: 'san', portgroup: 'vnet', iface: 'network' }[key] || key;
   if (cleanup) { try { cleanup(); } catch { /* egal */ } cleanup = null; }
   for (const a of app.querySelectorAll('.side-nav a')) {
-    if ((a.dataset.key === 'dashboard' && key === '') || a.dataset.key === navKey) a.setAttribute('aria-current', 'page');
+    if ((a.dataset.key === 'dashboard' && key === '') || a.dataset.key === navKey) {
+      a.setAttribute('aria-current', 'page');
+      const list = a.closest('.side-nav'), head = list?.previousElementSibling;
+      if (list?.hidden && head) setGroup(head, list, true, false);
+    }
     else a.removeAttribute('aria-current');
   }
   const mod = (await routes[key]()).default;
