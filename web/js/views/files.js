@@ -5,7 +5,7 @@ export default {
   title: 'Konfigurationsdateien',
   async render(main, _parts, query) {
     const body = h('div', { class: 'content' }, loading());
-    main.append(pageHead('21 / HOST-KONFIGURATION', 'Konfigurationsdateien', 'Freigegebene Systemdateien bearbeiten. Jede Änderung wird vorher mit dem passenden Prüfprogramm validiert und die alte Fassung gesichert.'), body);
+    main.append(pageHead('22 / HOST-KONFIGURATION', 'Konfigurationsdateien', 'Freigegebene Systemdateien bearbeiten. Jede Änderung wird vorher mit dem passenden Prüfprogramm validiert und die alte Fassung gesichert.'), body);
 
     let files = await get('/api/files');
     let cur = null, dirty = false;

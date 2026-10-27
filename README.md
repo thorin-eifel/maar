@@ -169,6 +169,15 @@ Damit man sich nicht aussperrt, gelten neue Regeln **auf Probe**: Nach dem Laden
 
 **doas** (Zeit, Namen & SSH → „Rechte (doas)“): Regeln mit Auswahl für Konto oder Gruppe (`:wheel`), Zielbenutzer, Befehl (Programme, die es auf dem Host gibt, oder eigener Pfad), Argumente und die Optionen `nopass`, `persist`, `keepenv`, `nolog`; unter jeder Regel steht sie als deutscher Satz. Die Reihenfolge bleibt erhalten, Beschreibungen (Kommentare) wandern mit der Regel, Regeln mit `setenv` bleiben als Rohtext unverändert. `doas -C` prüft vor dem Speichern. Warnungen gibt es für `nopass` ohne Befehl, relative Befehle (doas vergleicht sie buchstäblich) und wenn du dir selbst die Rechte entziehst.
 
+**Webserver & Mail** (Host-Konfiguration → „Webserver & Mail“, nur Administratoren):
+
+| Dienst | Formular |
+|---|---|
+| httpd | Webseiten (`server`-Blöcke): Name, Aliase, Adressen mit Port und TLS, Wurzelverzeichnis (Ordner unter `/var/www/htdocs`), Zertifikat und Schlüssel aus `/etc/ssl`, Verzeichnisliste, Indexdatei, Protokollformat, HSTS, Weiterleitung (`block return 30x`), `prefork`. `location`-Blöcke, `fastcgi`, `authenticate` u. ä. bleiben wörtlich erhalten. Mit „Webseite mit HTTPS hinzufügen“ als Vorlage. |
+| smtpd | Zertifikate (`pki`), Tabellen (`table`, Dateien aus `/etc/mail`), Annahme (`listen on` mit Schnittstelle, Port, STARTTLS/smtps, Zertifikat, Anmeldung), Zustellung (`action`: mbox, Maildir, LMTP, relay mit Smarthost, TLS, Anmeldedaten) und Regeln (`match`, erste Treffer gewinnt, jede als deutscher Satz). Zeilen mit Optionen, die das Formular nicht kennt, bleiben als Rohzeile in ihrem Abschnitt und an ihrer Stelle. |
+
+Gespeichert wird mit Vorschau, Syntaxprüfung (`httpd -n`, `smtpd -n`), Sicherung und Neuladen bzw. Neustart des Dienstes; ist der Dienst aus, bietet das Formular „aktivieren und starten“ an. Schutz vor Fehlern: smtpd-Regeln, die jedem Absender die Weiterleitung an beliebige Empfänger erlauben (offenes Relay), werden abgelehnt; Anmeldung braucht TLS; Tabellen, Zertifikate und Aktionen müssen es geben; Pfade und Namen werden geprüft. Hinweise gibt es, wenn `pf.conf` einen verwendeten Port nicht erwähnt.
+
 ## Rollen und Ereignisse
 
 Die Gruppe (`-group`, Standard `wheel`) entscheidet, wer sich anmelden darf; die Rolle, was danach erlaubt ist. Konten ohne Eintrag erhalten die Standardrolle (anfangs Administrator).

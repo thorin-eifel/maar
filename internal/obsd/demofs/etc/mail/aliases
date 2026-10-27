@@ -1,0 +1,4 @@
+# Aliases
+MAILER-DAEMON: postmaster
+postmaster: root
+root: thorin

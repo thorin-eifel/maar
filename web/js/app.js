@@ -10,8 +10,8 @@ const NAV = [
   ['Speicher', [['06', 'Geteilter Speicher', '#/san', 'san'], ['07', 'Lokale Datenträger', '#/storage', 'storage'], ['08', 'Backup', '#/backup', 'backup']]],
   ['Netzwerk', [['09', 'VM-Netze', '#/vnet', 'vnet'], ['10', 'Adapter & Routen', '#/network', 'network'], ['11', 'Paketfilter', '#/firewall', 'firewall']]],
   ['Überwachung', [['12', 'Leistung & Alarme', '#/performance', 'performance'], ['13', 'Ereignisse', '#/events', 'events'], ['14', 'Prozesse', '#/processes', 'processes'], ['15', 'Protokolle', '#/logs', 'logs']]],
-  ['Host-Konfiguration', [['16', 'Dienste', '#/services', 'services'], ['17', 'Pakete & Updates', '#/packages', 'packages'], ['18', 'Benutzer & Gruppen', '#/users', 'users'], ['19', 'System', '#/system', 'system'], ['20', 'Zeit, Namen & SSH', '#/hostconf', 'hostconf'], ['21', 'Konfigurationsdateien', '#/files', 'files']]],
-  ['Verwaltung', [['22', 'Zugriffssteuerung', '#/access', 'access']]],
+  ['Host-Konfiguration', [['16', 'Dienste', '#/services', 'services'], ['17', 'Pakete & Updates', '#/packages', 'packages'], ['18', 'Benutzer & Gruppen', '#/users', 'users'], ['19', 'System', '#/system', 'system'], ['20', 'Zeit, Namen & SSH', '#/hostconf', 'hostconf'], ['21', 'Webserver & Mail', '#/webmail', 'webmail'], ['22', 'Konfigurationsdateien', '#/files', 'files']]],
+  ['Verwaltung', [['23', 'Zugriffssteuerung', '#/access', 'access']]],
 ];
 
 const app = document.getElementById('app');
@@ -128,6 +128,7 @@ const routes = {
   logs: () => import('./views/logs.js'),
   access: () => import('./views/access.js'),
   hostconf: () => import('./views/hostconf.js'),
+  webmail: () => import('./views/webmail.js'),
   events: () => import('./views/events.js'),
   hosts: () => import('./views/hosts.js'),
   san: () => import('./views/san.js'),

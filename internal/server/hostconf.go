@@ -27,6 +27,10 @@ func (s *Server) confGet(w http.ResponseWriter, r *http.Request) {
 		v, err = s.Host.PFForm(r.Context())
 	case "doas":
 		v, err = s.Host.Doas(r.Context())
+	case "httpd":
+		v, err = s.Host.HTTPD(r.Context())
+	case "smtpd":
+		v, err = s.Host.SMTPD(r.Context())
 	default:
 		jsonErr(w, http.StatusNotFound, "Unbekannte Konfiguration")
 		return
@@ -74,6 +78,24 @@ func (s *Server) confPut(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		res, err = s.Host.SavePF(r.Context(), &c, s.pfGuard(r), preview)
+	case "httpd":
+		var req struct {
+			Conf     obsd.HTTPConf `json:"conf"`
+			Activate bool          `json:"activate"`
+		}
+		if !decode(w, r, &req) {
+			return
+		}
+		res, err = s.Host.SaveHTTPD(r.Context(), &req.Conf, req.Activate, preview)
+	case "smtpd":
+		var req struct {
+			Conf     obsd.SMTPConf `json:"conf"`
+			Activate bool          `json:"activate"`
+		}
+		if !decode(w, r, &req) {
+			return
+		}
+		res, err = s.Host.SaveSMTPD(r.Context(), &req.Conf, req.Activate, preview)
 	case "doas":
 		var c obsd.DoasConf
 		if !decode(w, r, &c) {

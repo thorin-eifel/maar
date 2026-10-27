@@ -7,7 +7,7 @@ const TABS = [['ntp', 'Zeit (ntpd)'], ['dns', 'Namensauflösung'], ['hosts', 'Ho
 const num = (v, d = 0) => Number.isFinite(Number(v)) && v !== '' ? Number(v) : d;
 
 // Eine Liste bearbeitbarer Zeilen mit „Hinzufügen“.
-function rows(items, mk, { add = 'Hinzufügen', max = 20, fresh = () => ({}) } = {}) {
+export function rows(items, mk, { add = 'Hinzufügen', max = 20, fresh = () => ({}) } = {}) {
   const box = h('div', { class: 'cf-rows' });
   const addBtn = h('button', { class: 'mini-btn', type: 'button' }, add);
   const draw = () => {
@@ -23,9 +23,9 @@ function rows(items, mk, { add = 'Hinzufügen', max = 20, fresh = () => ({}) } =
   return box;
 }
 
-const sel = (opts, value, on) => { const s = h('select', null, opts.map(([v, l]) => h('option', { value: v }, l))); s.value = String(value ?? ''); s.addEventListener('change', () => on(s.value)); return s; };
-const inp = (value, on, attrs = {}) => { const i = h('input', { value: value ?? '', ...attrs }); i.addEventListener('input', () => on(i.value)); return i; };
-const chk = (label, value, on) => { const c = h('input', { type: 'checkbox', checked: !!value }); c.addEventListener('change', () => on(c.checked)); return h('label', { class: 'check' }, c, label); };
+export const sel = (opts, value, on) => { const s = h('select', null, opts.map(([v, l]) => h('option', { value: v }, l))); s.value = String(value ?? ''); s.addEventListener('change', () => on(s.value)); return s; };
+export const inp = (value, on, attrs = {}) => { const i = h('input', { value: value ?? '', ...attrs }); i.addEventListener('input', () => on(i.value)); return i; };
+export const chk = (label, value, on) => { const c = h('input', { type: 'checkbox', checked: !!value }); c.addEventListener('change', () => on(c.checked)); return h('label', { class: 'check' }, c, label); };
 
 function showResult(r, extra) {
   const msg = [r.applied, r.output && r.output !== 'Keine Änderung.' ? r.output : (r.output || '')].filter(Boolean).join(' ');

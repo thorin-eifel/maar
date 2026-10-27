@@ -149,6 +149,15 @@ func TestRolesAndEvents(t *testing.T) {
 	if code, _ := do(t, c, "POST", ts.URL+"/api/conf/pf/revert", csrf, ""); code != 400 {
 		t.Errorf("Rücknahme ohne ausstehende Änderung: %d", code)
 	}
+	if code, out := do(t, c, "GET", ts.URL+"/api/conf/httpd", csrf, ""); code != 200 || !strings.Contains(out, "nordlicht.ctw.lan") {
+		t.Errorf("httpd lesen: %d %.100s", code, out)
+	}
+	if code, out := do(t, c, "GET", ts.URL+"/api/conf/smtpd", csrf, ""); code != 200 || !strings.Contains(out, "local_mail") {
+		t.Errorf("smtpd lesen: %d %.100s", code, out)
+	}
+	if code, out := do(t, c, "PUT", ts.URL+"/api/conf/smtpd?preview=1", csrf, `{"conf":{"listens":[{"on":"lo0"}],"actions":[{"name":"o","method":"relay"}],"matches":[{"from":"any","for":"any","action":"o"}]}}`); code != 400 || !strings.Contains(out, "offenes Relay") {
+		t.Errorf("smtpd offenes Relay: %d %.200s", code, out)
+	}
 	if code, _ := do(t, c, "GET", ts.URL+"/api/conf/gibtsnicht", csrf, ""); code != 404 {
 		t.Errorf("unbekannte Konfiguration: %d", code)
 	}
