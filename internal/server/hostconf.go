@@ -35,6 +35,8 @@ func (s *Server) confGet(w http.ResponseWriter, r *http.Request) {
 		v, err = s.Host.MailTables(r.Context())
 	case "sysctl":
 		v, err = s.Host.SysctlConf(r.Context())
+	case "relayd":
+		v, err = s.Host.Relayd(r.Context())
 	default:
 		jsonErr(w, http.StatusNotFound, "Unbekannte Konfiguration")
 		return
@@ -100,6 +102,15 @@ func (s *Server) confPut(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		res, err = s.Host.SaveSMTPD(r.Context(), &req.Conf, req.Activate, preview)
+	case "relayd":
+		var req struct {
+			Conf     obsd.RelaydConf `json:"conf"`
+			Activate bool            `json:"activate"`
+		}
+		if !decode(w, r, &req) {
+			return
+		}
+		res, err = s.Host.SaveRelayd(r.Context(), &req.Conf, req.Activate, preview)
 	case "sysctl":
 		var req struct {
 			Entries  []obsd.SysctlEntry `json:"entries"`

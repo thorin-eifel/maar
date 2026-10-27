@@ -5,15 +5,15 @@ import { h, clear, pageHead, panel, pill, loading, toast, toastError, confirm, d
 import { get, put } from '../api.js';
 import { rows, sel, inp, chk } from './hostconf.js';
 
-const TABS = [['httpd', 'Webserver (httpd)'], ['smtpd', 'Mail (smtpd)'], ['mail', 'Mail-Adressen']];
+const TABS = [['httpd', 'Webserver (httpd)'], ['smtpd', 'Mail (smtpd)'], ['mail', 'Mail-Adressen'], ['relayd', 'Lastverteilung (relayd)']];
 const clone = x => JSON.parse(JSON.stringify(x));
 
 export default {
-  title: 'Webserver & Mail',
+  title: 'Web, Mail & Lastverteilung',
   async render(main, parts) {
     let tab = TABS.some(t => t[0] === parts[0]) ? parts[0] : 'httpd', pending = null;
     const tabsEl = h('div', { class: 'tabs', role: 'tablist', 'aria-label': 'Dienste' }), body = h('div', { class: 'content' }, loading());
-    main.append(pageHead('21 / HOST-KONFIGURATION', 'Webserver & Mail', 'Webseiten und Mail-Zustellung als Formulare. Zur Auswahl steht nur, was es auf diesem Host gibt; maar schreibt die Dateien im Hintergrund, prüft sie und lädt den Dienst neu.'), tabsEl, body);
+    main.append(pageHead('21 / HOST-KONFIGURATION', 'Web, Mail & Lastverteilung', 'Webseiten, Mail-Zustellung und Lastverteilung als Formulare. Zur Auswahl steht nur, was es auf diesem Host gibt; maar schreibt die Dateien im Hintergrund, prüft sie und lädt den Dienst neu.'), tabsEl, body);
 
     function drawTabs() {
       clear(tabsEl, TABS.map(([k, l]) => {
@@ -47,7 +47,7 @@ export default {
       clear(body, loading());
       try {
         const v = await get(`/api/conf/${tab === 'mail' ? 'mailtables' : tab}`);
-        await ({ httpd: drawHTTPD, smtpd: drawSMTPD, mail: drawMail })[tab](v);
+        await ({ httpd: drawHTTPD, smtpd: drawSMTPD, mail: drawMail, relayd: drawRelayd })[tab](v);
         if (pending) {
           body.prepend(h('div', { class: 'content-stack' }, pending.applied ? h('div', { class: 'note ok', role: 'status' }, pending.applied) : null,
             pending.warns.length ? h('div', { class: 'note warn', role: 'status' }, h('strong', null, 'Bitte beachten: '), pending.warns.map(w => h('div', null, w))) : null));
@@ -200,6 +200,81 @@ export default {
         v.missing.length ? h('div', { class: 'note warn' }, `Die Datei ${v.missing.join(', ')} fehlt noch.`) : null,
         v.hidden.length ? h('div', { class: 'note' }, `Absichtlich nicht angezeigt (Anmeldedaten mit Passwort-Hashes): ${v.hidden.map(n => `<${n}>`).join(' ')}`) : null,
         ...panels);
+    }
+
+    // ---- relayd ----
+    function drawRelayd(v) {
+      const c = clone(v.conf), st = { on: !v.enabled && !v.running };
+      const addrOpts = [...new Set(['*', ...v.addresses])].map(a => [a, a === '*' ? 'Alle Adressen (*)' : a]);
+      const tableNames = () => c.tables.map(t => t.name).filter(Boolean);
+      const protoNames = () => [...v.protocols, ...c.newProtocols.map(p => p.name).filter(Boolean)];
+      const MODES = { relay: [['', 'Standard (roundrobin)'], ['roundrobin', 'reihum (roundrobin)'], ['random', 'zufällig'], ['source-hash', 'nach Absender (source-hash)'], ['hash', 'nach Schlüssel (hash)'], ['loadbalance', 'nach Anfrage (loadbalance)']],
+        redirect: [['', 'Standard (roundrobin)'], ['roundrobin', 'reihum (roundrobin)'], ['random', 'zufällig'], ['source-hash', 'nach Absender (source-hash)'], ['least-states', 'wenigste Verbindungen (least-states)']] };
+      const hostLabel = a => { const m = v.vmHosts.find(x => x.addr === a); return m ? `${a} – VM ${m.name}` : a; };
+
+      const global = h('div', { class: 'form-grid' },
+        field('Prüfintervall', sel([['0', 'Standard (10 s)'], ...[2, 5, 10, 30, 60].map(n => [n, `${n} s`])], c.interval, x => { c.interval = Number(x); }), 'Wie oft relayd die Ziele prüft.'),
+        field('Prüf-Timeout', sel([['0', 'Standard (200 ms)'], ...[200, 500, 1000, 2000, 5000].map(n => [n, `${n} ms`])], c.timeout, x => { c.timeout = Number(x); }), 'Muss kleiner als das Intervall sein.'),
+        field('Arbeitsprozesse (prefork)', sel([['0', 'Standard (3)'], ...Array.from({ length: 16 }, (_, i) => [i + 1, String(i + 1)])], c.prefork, x => { c.prefork = Number(x); })),
+        h('div', { class: 'stack' }, chk('Zustandswechsel der Ziele protokollieren', c.logStateChanges, x => { c.logStateChanges = x; }), chk('Verbindungen protokollieren', c.logConnection, x => { c.logConnection = x; })));
+
+      const tablesBox = h('div', { class: 'content-stack' });
+      function drawTables() {
+        tablesBox.replaceChildren(...c.tables.map((t, i) => {
+          if (t.raw) return h('div', { class: 'cf-row' }, h('div', { class: 'cf-fields' }, h('code', { class: 'mono' }, t.raw), h('p', { class: 'hint' }, 'Tabelle mit Makros oder Sonderoptionen – bleibt unverändert.')), h('div', { class: 'toolbar' }, h('button', { class: 'mini-btn danger', type: 'button', onclick: () => { c.tables.splice(i, 1); drawTables(); } }, 'Entfernen')));
+          const hosts = rows(t.hosts, hh => h('div', { class: 'cf-fields' }, field('Zielhost', h('div', { class: 'stack' }, inp(hh.addr, x => { hh.addr = x.trim(); }, { list: 'rl-hosts', class: 'mono', placeholder: '10.0.0.11 oder name.ctw.lan' }),
+            sel([['', 'VM-Adresse übernehmen …'], ...v.vmHosts.map(m => [m.addr, hostLabel(m.addr)])], '', function (x) { if (x) { hh.addr = x; drawTables(); } }))),
+            field('Wiederholungen bei Fehler (retry)', sel(Array.from({ length: 6 }, (_, k) => [k, k === 0 ? 'keine' : String(k)]), hh.retry, x => { hh.retry = Number(x); }))), { add: 'Zielhost hinzufügen', max: 100, fresh: () => ({ addr: '', retry: 0 }) });
+          return panel(`<${t.name || 'neu'}>`, 'TABLE', h('div', { class: 'panel-body' }, h('div', { class: 'form-grid' }, field('Name', inp(t.name, x => { t.name = x.trim(); }, { class: 'mono', placeholder: 'web' })), chk('Tabelle deaktiviert (disable)', t.disable, x => { t.disable = x; })), hosts,
+            h('div', { class: 'toolbar' }, h('button', { class: 'mini-btn danger', type: 'button', onclick: () => { c.tables.splice(i, 1); drawTables(); drawServices(); } }, 'Tabelle entfernen'))));
+        }), h('div', null, h('button', { class: 'mini-btn', type: 'button', onclick: () => { c.tables.push({ id: 0, name: '', disable: false, hosts: [{ addr: v.vmHosts[0]?.addr || '', retry: 0 }] }); drawTables(); } }, 'Tabelle hinzufügen')));
+      }
+
+      const protoBox = h('div');
+      c.newProtocols = c.newProtocols || [];
+      const PRESETS = [['http', 'HTTP mit X-Forwarded-For'], ['https', 'HTTPS (TLS beenden) mit X-Forwarded-For'], ['tcp', 'TCP durchreichen']];
+      function drawProtos() {
+        clear(protoBox, v.protocols.length ? h('p', { class: 'hint' }, 'Vorhanden (bleiben unverändert): ', v.protocols.map(p => h('code', { class: 'tag mono' }, p))) : null,
+          rows(c.newProtocols, p => h('div', { class: 'cf-fields' }, field('Neues Protokoll', inp(p.name, x => { p.name = x.trim(); drawServices(); }, { class: 'mono', placeholder: 'httpfwd' })), field('Vorlage', sel(PRESETS, p.preset, x => { p.preset = x; drawProtos(); })),
+            p.preset === 'https' ? field('Schlüsselpaar', sel([['', v.keypairs.length ? '– wählen –' : 'keines in /etc/ssl'], ...v.keypairs.map(k => [k, k])], p.keypair, x => { p.keypair = x; })) : null),
+            { add: 'Protokoll aus Vorlage anlegen', max: 20, fresh: () => ({ name: '', preset: 'http', keypair: '' }) }));
+      }
+
+      const svcBox = h('div', { class: 'content-stack' });
+      function drawServices() {
+        svcBox.replaceChildren(...c.services.map((s, i) => {
+          if (s.raw) return panel(`${s.kind === 'relay' ? 'Relay' : 'Weiterleitung'} „${s.name}“`, 'UNVERÄNDERT', h('div', { class: 'panel-body' }, h('pre', { class: 'codeblock' }, s.raw), h('p', { class: 'hint' }, s.notes.join(' ')), h('button', { class: 'mini-btn danger', type: 'button', onclick: () => { c.services.splice(i, 1); drawServices(); } }, 'Entfernen')));
+          const relay = s.kind === 'relay';
+          const listen = rows(s.listen, l => h('div', { class: 'cf-fields' }, field('Adresse', sel(addrOpts.some(([a]) => a === l.addr) ? addrOpts : [...addrOpts, [l.addr, l.addr]], l.addr, x => { l.addr = x; })),
+            field(relay ? 'Port' : 'Port (oder von:bis)', inp(l.port, x => { l.port = x.trim(); }, { class: 'mono', placeholder: relay ? '443' : '2200:2210' })),
+            relay ? chk('mit TLS', l.tls, x => { l.tls = x; }) : field('Protokoll', sel([['', 'TCP und UDP'], ['tcp', 'TCP'], ['udp', 'UDP']], l.proto, x => { l.proto = x; }))), { add: 'Adresse hinzufügen', max: 10, fresh: () => ({ addr: addrOpts[1]?.[0] || '*', port: '', proto: '', tls: false }) });
+          const path = inp(s.check.path, x => { s.check.path = x.trim(); }, { class: 'mono', placeholder: '/health', hidden: !['http', 'https'].includes(s.check.kind) });
+          const code = inp(String(s.check.code || 200), x => { s.check.code = Number(x) || 0; }, { type: 'number', min: 100, max: 599, hidden: !['http', 'https'].includes(s.check.kind) });
+          return panel(s.name || 'Neu', relay ? 'RELAY · SCHICHT 7' : 'REDIRECT · SCHICHT 3', h('div', { class: 'panel-body' },
+            h('div', { class: 'form-grid' }, field('Name', inp(s.name, x => { s.name = x.trim(); }, { class: 'mono' })), chk('deaktiviert (disable)', s.disable, x => { s.disable = x; })),
+            h('strong', null, 'Lauschen auf'), listen,
+            h('div', { class: 'form-grid' },
+              relay ? field('Protokoll', sel([['', '– keines –'], ...protoNames().map(p => [p, p])], s.protocol, x => { s.protocol = x; })) : null,
+              field('Weiterleiten an Tabelle', sel([['', '–'], ...tableNames().map(t => [t, `<${t}>`])], s.table, x => { s.table = x; })),
+              field('Zielport (leer = wie Eingang)', inp(s.port ? String(s.port) : '', x => { s.port = Number(x) || 0; }, { type: 'number', min: 1, max: 65535 })),
+              field('Verteilverfahren', sel(MODES[s.kind], s.mode, x => { s.mode = x; })),
+              field('Zustandsprüfung', h('div', { class: 'stack' }, sel([['', 'keine'], ['icmp', 'Ping (icmp)'], ['tcp', 'TCP-Verbindung (tcp)'], ['tls', 'TLS-Verbindung (tls)'], ['http', 'HTTP-Abruf'], ['https', 'HTTPS-Abruf']], s.check.kind, x => { s.check.kind = x; path.hidden = code.hidden = !['http', 'https'].includes(x); }), path, code)),
+              field('Sitzungs-Timeout (Sekunden, 0 = Standard)', inp(s.sessionTimeout ? String(s.sessionTimeout) : '', x => { s.sessionTimeout = Number(x) || 0; }, { type: 'number', min: 0, max: 86400 })),
+              !relay ? chk('Sitzungen an dieselbe Quelle binden (sticky-address)', s.sticky, x => { s.sticky = x; }) : null),
+            s.notes.length ? h('p', { class: 'hint' }, 'Bleiben unverändert: ', s.notes.map(n => h('code', { class: 'mono tag' }, n))) : null,
+            h('div', { class: 'toolbar' }, h('button', { class: 'mini-btn danger', type: 'button', onclick: () => { c.services.splice(i, 1); drawServices(); } }, 'Entfernen'))));
+        }), h('div', { class: 'toolbar' },
+          ...['relay', 'redirect'].map(k => h('button', { class: 'mini-btn', type: 'button', onclick: () => { c.services.push({ id: 0, kind: k, name: '', disable: false, listen: [{ addr: addrOpts[1]?.[0] || '*', port: k === 'relay' ? '80' : '', proto: '', tls: false }], protocol: '', table: tableNames()[0] || '', port: 0, mode: '', check: { kind: 'tcp', path: '', code: 200 }, sessionTimeout: 0, sticky: false, notes: [] }); drawServices(); } }, k === 'relay' ? 'Relay hinzufügen' : 'Weiterleitung hinzufügen'))));
+      }
+      drawTables(); drawProtos(); drawServices();
+      clear(body, status(v),
+        !v.pfAnchor && c.services.some(s => s.kind === 'redirect') ? h('div', { class: 'note warn' }, 'Weiterleitungen (redirect) brauchen in /etc/pf.conf die Zeile ', h('code', { class: 'mono' }, 'anchor "relayd/*"'), '.') : null,
+        h('div', { class: 'note' }, h('strong', null, 'So arbeitet relayd: '), 'Eine Tabelle sammelt die Zielhosts. Ein ', h('strong', null, 'Relay'), ' (Schicht 7) nimmt Verbindungen an und kann HTTP und TLS bearbeiten; eine ', h('strong', null, 'Weiterleitung'), ' (Schicht 3) leitet nur über den Paketfilter um. Die Zustandsprüfung nimmt ausgefallene Ziele automatisch aus der Verteilung.'),
+        v.other.length ? h('div', { class: 'note' }, 'Unverändert bleiben: ', h('code', { class: 'mono' }, v.other.join(' · '))) : null,
+        panel('Allgemein', 'INTERVAL · TIMEOUT · LOG', h('div', { class: 'panel-body' }, global)),
+        h('datalist', { id: 'rl-hosts' }, v.vmHosts.map(m => h('option', { value: m.addr }, hostLabel(m.addr)))),
+        tablesBox, panel('Protokolle', 'PROTOCOL', h('div', { class: 'panel-body' }, protoBox)), svcBox,
+        actions('relayd', () => ({ conf: { interval: c.interval, timeout: c.timeout, prefork: c.prefork, logConnection: c.logConnection, logStateChanges: c.logStateChanges, tables: c.tables, newProtocols: c.newProtocols.filter(p => p.name), services: c.services.map(s => ({ ...s, listen: s.listen.map(l => ({ ...l, port: String(l.port) })) })) }, activate: st.on }), activateBox(v, st)));
     }
 
     drawTabs();

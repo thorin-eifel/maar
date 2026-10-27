@@ -404,3 +404,112 @@ func TestSysctlConfForm(t *testing.T) {
 		t.Errorf("abgelehnte Eingabe änderte den laufenden Wert: %q", out)
 	}
 }
+
+func TestRelaydForm(t *testing.T) {
+	h := newDemoHost(t)
+	ctx := context.Background()
+	v, err := h.Relayd(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := v.Conf
+	if c.Interval != 5 || c.Timeout != 1000 || !c.LogConn || len(c.Tables) != 1 || c.Tables[0].Name != "web" || len(c.Tables[0].Hosts) != 2 || c.Tables[0].Hosts[0].Retry != 2 || len(c.Services) != 2 {
+		t.Fatalf("Parser: %+v", c)
+	}
+	rl, rd := c.Services[0], c.Services[1]
+	if rl.Kind != "relay" || rl.Protocol != "httpfwd" || rl.Table != "web" || rl.Port != 80 || rl.Mode != "roundrobin" || rl.Check.Kind != "http" || rl.Check.Path != "/" || rl.Check.Code != 200 || rd.Kind != "redirect" || rd.Check.Kind != "tcp" || rd.Port != 22 || rd.Listen[0].Port != "2222" {
+		t.Fatalf("Dienste: %+v / %+v", rl, rd)
+	}
+	if len(v.Protocols) != 1 || v.Protocols[0] != "httpfwd" || len(v.VMHosts) < 2 || v.VMHosts[0].Addr == "" || !contains(v.Keypairs, "server") {
+		t.Errorf("Auswahl: %v %v %v", v.Protocols, v.VMHosts, v.Keypairs)
+	}
+	// Rundlauf: Protokoll, Kommentar und Reihenfolge bleiben
+	if _, err := h.SaveRelayd(ctx, &c, false, false); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := h.readFile(relaydPath)
+	for _, w := range []string{"# relayd.conf", "interval 5", "table <web> { 10.0.0.11 retry 2, 10.0.0.12 }", `http protocol "httpfwd" {`, `match header set "X-Forwarded-For" value "$REMOTE_ADDR"`, `relay "www" {`, "listen on 192.168.50.10 port 80", `forward to <web> port 80 mode roundrobin check http "/" code 200`, `redirect "ssh" {`, "forward to <web> port 22 check tcp"} {
+		if !strings.Contains(got, w) {
+			t.Errorf("%q fehlt:\n%s", w, got)
+		}
+	}
+	// Ändern: weiterer Host, Verteilverfahren, TLS-Relay mit neuem Protokoll, Sticky
+	v, _ = h.Relayd(ctx)
+	c = v.Conf
+	c.Tables[0].Hosts = append(c.Tables[0].Hosts, RelaydHost{Addr: "10.0.0.20", Retry: 1})
+	c.Services[0].Mode = "loadbalance"
+	c.Services[0].Check = RelaydCheck{Kind: "http", Path: "/health", Code: 204}
+	c.Services[1].Sticky = true
+	c.Protocols = []RelaydProtocolNew{{Name: "tlsfwd", Preset: "https", Keypair: "server"}}
+	c.Services = append(c.Services, RelaydService{Kind: "relay", Name: "ssl", Listen: []RelaydListen{{Addr: "192.168.50.10", Port: "443", TLS: true}}, Protocol: "tlsfwd", Table: "web", Port: 80, Mode: "source-hash", Check: RelaydCheck{Kind: "tcp"}, Timeout: 300})
+	res, err := h.SaveRelayd(ctx, &c, false, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, _ = h.readFile(relaydPath)
+	for _, w := range []string{"10.0.0.20 retry 1", "mode loadbalance check http \"/health\" code 204", "sticky-address", `http protocol "tlsfwd" {`, `tls { keypair "server" }`, "listen on 192.168.50.10 port 443 tls", "mode source-hash check tcp", "session timeout 300", `http protocol "httpfwd"`} {
+		if !strings.Contains(got, w) {
+			t.Errorf("%q fehlt:\n%s", w, got)
+		}
+	}
+	if !strings.Contains(strings.Join(res.Warnings, "|"), "anchor") || !strings.Contains(res.Applied, "gestartet") && !strings.Contains(res.Applied, "geladen") {
+		t.Errorf("Hinweise: %+v", res)
+	}
+	// Zeilen mit Unbekanntem bleiben
+	h.WriteConfig(ctx, relaydPath, "table <a> { 10.0.0.1 }\nrelay \"x\" {\n\tlisten on 192.168.50.10 port 8080\n\tforward to <a> port 80 check script \"/usr/local/bin/chk\"\n\ttransparent forward to 10.0.0.9 port 1\n}\nredirect \"y\" {\n\tlisten on 192.168.50.10 port 53 pflog\n\tforward to <a>\n}\n", 0)
+	v, _ = h.Relayd(ctx)
+	if v.Conf.Services[0].Notes == nil || v.Conf.Services[1].Raw == "" {
+		t.Fatalf("Notizen/Raw: %+v", v.Conf.Services)
+	}
+	if _, err := h.SaveRelayd(ctx, &v.Conf, false, false); err != nil {
+		t.Fatal(err)
+	}
+	got, _ = h.readFile(relaydPath)
+	for _, w := range []string{`check script "/usr/local/bin/chk"`, "transparent forward to 10.0.0.9 port 1", "port 53 pflog"} {
+		if !strings.Contains(got, w) {
+			t.Errorf("%q verloren:\n%s", w, got)
+		}
+	}
+	// Ablehnungen
+	before, _ := h.readFile(relaydPath)
+	base := func() RelaydConf {
+		return RelaydConf{Tables: []RelaydTable{{Name: "t", Hosts: []RelaydHost{{Addr: "10.0.0.1"}}}}, Services: []RelaydService{{Kind: "relay", Name: "r", Listen: []RelaydListen{{Addr: "192.168.50.10", Port: "80"}}, Table: "t", Port: 80}}}
+	}
+	for i, mod := range []func(c *RelaydConf){
+		func(c *RelaydConf) { c.Interval, c.Timeout = 5, 6000 },
+		func(c *RelaydConf) { c.Tables[0].Hosts = nil },
+		func(c *RelaydConf) { c.Tables[0].Hosts[0].Addr = "a b" },
+		func(c *RelaydConf) { c.Tables[0].Hosts[0].Addr = "10.0.0.1 }\nrelay \"evil\" {" },
+		func(c *RelaydConf) { c.Tables[0].Hosts[0].Retry = 99 },
+		func(c *RelaydConf) { c.Tables[0].Name = "a>b" },
+		func(c *RelaydConf) { c.Services[0].Table = "gibtsnicht" },
+		func(c *RelaydConf) { c.Services[0].Mode = "least-states" },
+		func(c *RelaydConf) { c.Services[0].Kind = "redirect"; c.Services[0].Mode = "hash" },
+		func(c *RelaydConf) { c.Services[0].Listen[0].Addr = "1.2.3.4" },
+		func(c *RelaydConf) { c.Services[0].Listen[0].Port = "99999" },
+		func(c *RelaydConf) { c.Services[0].Listen[0].Port = "80:90" },
+		func(c *RelaydConf) { c.Services[0].Protocol = "gibtsnicht" },
+		func(c *RelaydConf) { c.Services[0].Check = RelaydCheck{Kind: "http", Path: "x", Code: 200} },
+		func(c *RelaydConf) { c.Services[0].Check = RelaydCheck{Kind: "http", Path: "/\"; evil", Code: 200} },
+		func(c *RelaydConf) { c.Services[0].Check = RelaydCheck{Kind: "script", Path: "/bin/sh"} },
+		func(c *RelaydConf) { c.Services[0].Name = "a\"b" },
+		func(c *RelaydConf) {
+			c.Protocols = []RelaydProtocolNew{{Name: "p", Preset: "https", Keypair: "gibtsnicht"}}
+		},
+		func(c *RelaydConf) { c.Protocols = []RelaydProtocolNew{{Name: "p", Preset: "evil"}} },
+		func(c *RelaydConf) { c.Services[0].Timeout = -1 },
+		func(c *RelaydConf) {
+			c.Services = append(c.Services, RelaydService{Kind: "redirect", Name: "d", Listen: []RelaydListen{{Addr: "192.168.50.10", Port: "1"}}})
+		},
+		func(c *RelaydConf) { c.Services[0].ID = 99 },
+	} {
+		cc := base()
+		mod(&cc)
+		if _, err := h.SaveRelayd(ctx, &cc, false, false); err == nil {
+			t.Errorf("Fall %d akzeptiert", i)
+		}
+	}
+	if after, _ := h.readFile(relaydPath); after != before {
+		t.Error("abgelehnte Eingaben haben relayd.conf verändert")
+	}
+}

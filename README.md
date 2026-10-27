@@ -171,7 +171,7 @@ Damit man sich nicht aussperrt, gelten neue Regeln **auf Probe**: Nach dem Laden
 
 **doas** (System-Einstellungen → „Rechte (doas)“): Regeln mit Auswahl für Konto oder Gruppe (`:wheel`), Zielbenutzer, Befehl (Programme, die es auf dem Host gibt, oder eigener Pfad), Argumente und die Optionen `nopass`, `persist`, `keepenv`, `nolog`; unter jeder Regel steht sie als deutscher Satz. Die Reihenfolge bleibt erhalten, Beschreibungen (Kommentare) wandern mit der Regel, Regeln mit `setenv` bleiben als Rohtext unverändert. `doas -C` prüft vor dem Speichern. Warnungen gibt es für `nopass` ohne Befehl, relative Befehle (doas vergleicht sie buchstäblich) und wenn du dir selbst die Rechte entziehst.
 
-**Webserver & Mail** (Host-Konfiguration → „Webserver & Mail“, nur Administratoren):
+**Web, Mail & Lastverteilung** (Host-Konfiguration → „Web, Mail & Lastverteilung“, nur Administratoren):
 
 | Dienst | Formular |
 |---|---|
@@ -181,6 +181,8 @@ Damit man sich nicht aussperrt, gelten neue Regeln **auf Probe**: Nach dem Laden
 **Mail-Adressen** (dritter Reiter): Die von smtpd verwendeten Dateitabellen als Tabelle zum Bearbeiten – Aliase (`name: ziel, ziel`) und virtuelle Adressen (`info@example.org ziel` oder `@example.org` für alle übrigen Adressen einer Domain). Ziele sind lokale Benutzer (Auswahl) oder Mail-Adressen. maar lehnt Schleifen unter Aliasen, unbekannte Ziele und das Entfernen von `root` ab; Zeilen mit Befehl (`|…`), Datei oder `:include:` bleiben als Rohzeile unverändert und lassen sich nicht neu anlegen. Nach dem Speichern liest `smtpctl update table` die Tabelle neu ein. Tabellen mit Anmeldedaten (Passwort-Hashes) werden bewusst weder gelesen noch angezeigt.
 
 Gespeichert wird mit Vorschau, Syntaxprüfung (`httpd -n`, `smtpd -n`), Sicherung und Neuladen bzw. Neustart des Dienstes; ist der Dienst aus, bietet das Formular „aktivieren und starten“ an. Schutz vor Fehlern: smtpd-Regeln, die jedem Absender die Weiterleitung an beliebige Empfänger erlauben (offenes Relay), werden abgelehnt; Anmeldung braucht TLS; Tabellen, Zertifikate und Aktionen müssen es geben; Pfade und Namen werden geprüft. Hinweise gibt es, wenn `pf.conf` einen verwendeten Port nicht erwähnt.
+
+**Lastverteilung** (Web, Mail & Lastverteilung → „Lastverteilung (relayd)“): `/etc/relayd.conf` als Formular. Zieltabellen mit Hosts (VM-Adressen aus den VM-Netzen per Auswahl, Wiederholungen bei Fehler), Relays (Schicht 7: Adresse, Port, TLS, Protokoll, Zieltabelle, Verteilverfahren, Zustandsprüfung per Ping, TCP, TLS oder HTTP-Abruf mit Pfad und Statuscode, Sitzungs-Timeout) und Weiterleitungen (Schicht 3, mit Portbereich und `sticky-address`). Neue Protokolle entstehen aus Vorlagen (HTTP mit `X-Forwarded-For`, HTTPS mit Schlüsselpaar aus `/etc/ssl`, TCP); vorhandene Protokolle, Makros und alles, was das Formular nicht versteht, bleiben unverändert (ganze Blöcke mit unbekannten Anweisungen sind schreibgeschützt). Geprüft werden Namen, Verweise auf Tabellen und Protokolle, Verteilverfahren je Art, Intervall gegen Timeout und Adressen des Hosts; Hinweise gibt es zu fehlendem `anchor "relayd/*"` in `pf.conf`, TLS ohne Schlüsselpaar und nicht erlaubten Ports.
 
 ## Rollen und Ereignisse
 
