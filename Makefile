@@ -4,7 +4,7 @@ VERSION ?= 1.0.0
 LDFLAGS := -s -w -X main.version=$(VERSION)
 BIN     := build
 
-.PHONY: all openbsd test check-js demo install clean
+.PHONY: all openbsd release test check-js demo install clean
 
 all: openbsd
 
@@ -12,6 +12,11 @@ all: openbsd
 openbsd:
 	CGO_ENABLED=0 GOOS=openbsd GOARCH=amd64 go build -trimpath -ldflags "$(LDFLAGS)" -o $(BIN)/maard-openbsd-amd64 ./cmd/maard
 	CGO_ENABLED=0 GOOS=openbsd GOARCH=arm64 go build -trimpath -ldflags "$(LDFLAGS)" -o $(BIN)/maard-openbsd-arm64 ./cmd/maard
+
+# Release-Dateien samt Prüfsummen (OpenBSD-Format, wird von install.sh mit sha256 -C geprüft).
+release: openbsd
+	cd $(BIN) && for f in maard-openbsd-*; do printf 'SHA256 (%s) = %s\n' $$f $$(shasum -a 256 $$f | cut -d' ' -f1); done > SHA256
+	cp install.sh $(BIN)/install.sh
 
 test:
 	go vet ./...

@@ -238,7 +238,19 @@ Shell – deshalb lauscht der Demo-Modus ausschließlich auf localhost.
 
 ## Installation auf OpenBSD
 
-Entweder auf dem Mac/Linux cross-kompilieren:
+Der einfachste Weg – als root auf dem OpenBSD-Host (amd64 oder arm64), mit Prüfsummenkontrolle:
+
+```sh
+ftp -o - https://github.com/thorin-eifel/maar/releases/latest/download/install.sh | sh
+```
+
+Das Skript lädt die passende Version aus dem GitHub-Release, prüft sie gegen `SHA256`, installiert
+`/usr/local/sbin/maard` und `/etc/rc.d/maard`, aktiviert und startet den Dienst. Derselbe Befehl
+aktualisiert eine vorhandene Installation (Dienst wird kurz neu gestartet, Optionen bleiben).
+Mit `MAAR_VERSION=1.0.0` wird eine bestimmte Version gewählt, mit `MAAR_FLAGS="-listen 192.168.50.10:9443"`
+setzt man bei der Erstinstallation die Startoptionen.
+
+Alternativ von Hand: auf dem Mac/Linux cross-kompilieren (`make release` erzeugt zusätzlich die Prüfsummen):
 
 ```bash
 make openbsd
