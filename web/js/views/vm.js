@@ -6,6 +6,7 @@ import { watchJob, onJobDone } from '../jobs.js';
 import { deployDialog, toTemplateDialog } from '../deploy.js';
 import { backupNowDialog, scheduleText } from './backup.js';
 import { nicDialog, firewallDialog } from './vnet.js';
+import { vmSettingsDialog } from '../vmsettings.js';
 import { act, startFromISODialog, editBlockDialog, removeVMDialog, hardKillDialog } from '../vmactions.js';
 
 const enc = encodeURIComponent;
@@ -146,8 +147,10 @@ export default {
       const adm = (label, fn) => isAdmin ? h('button', { class: 'mini-btn', type: 'button', onclick: () => fn() }, label) : null;
       const reload = () => load().catch(toastError);
       clear(content,
-        panel('Hardware', '/ETC/VM.CONF', h('div', { class: 'panel-body flush' }, h('pre', { class: 'codeblock' }, c.raw.trim()),
-          h('div', { class: 'note' }, 'Laufende VMs übernehmen Änderungen beim nächsten Start. Vor dem Speichern prüft vmd -n die Syntax.')), adm('Bearbeiten', () => editBlockDialog(vm, reload))),
+        panel('Hardware', 'EINSTELLUNGEN', h('div', { class: 'panel-body' }, hardwareList(),
+          h('details', { class: 'expert' }, h('summary', null, 'vm.conf anzeigen (Experte)'), h('pre', { class: 'codeblock' }, c.raw.trim()),
+            isAdmin ? h('button', { class: 'mini-btn', type: 'button', onclick: () => editBlockDialog(vm, reload) }, 'Als Text bearbeiten …') : null),
+          h('p', { class: 'hint' }, 'Laufende VMs übernehmen Änderungen beim nächsten Start.')), adm('Bearbeiten', () => vmSettingsDialog(name, { onDone: reload, onExpert: () => editBlockDialog(vm, reload) }))),
         panel('Festplatten', 'DISK-IMAGES', h('div', { class: 'panel-body flush' }, table(['Image', 'Format', { label: 'Größe', num: true }, { label: 'Belegt', num: true }, 'Speicherort', 'Basis'],
           d.disks.map(k => h('tr', null, h('td', null, h('span', { class: 'name mono' }, k.name), h('span', { class: 'sub mono' }, k.path)), h('td', null, k.missing ? pill('bad', 'fehlt') : pill('off', k.format)),
             h('td', { class: 'num' }, k.missing ? '–' : bytes(k.virtual)), h('td', { class: 'num' }, k.missing ? '–' : bytes(k.size)), h('td', null, k.store ? h('a', { href: `#/datastore/${enc(k.store)}` }, `Datastore ${k.store}`) : 'lokal'),

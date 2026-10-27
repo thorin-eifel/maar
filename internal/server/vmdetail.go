@@ -33,3 +33,21 @@ func (s *Server) vmDetail(w http.ResponseWriter, r *http.Request) {
 		Viewers int              `json:"viewers"`
 	}{d, alerts, events, s.Hub.Viewers()["vm:"+name]})
 }
+
+// vmOptions liefert die Auswahlmöglichkeiten für das Einstellungsformular.
+func (s *Server) vmOptions(w http.ResponseWriter, r *http.Request) {
+	o, err := s.Host.VMOptions(r.Context(), r.PathValue("name"))
+	respond(w, o, err)
+}
+
+// vmSettings schreibt die per Auswahl geänderten Einstellungen in vm.conf.
+func (s *Server) vmSettings(w http.ResponseWriter, r *http.Request) {
+	var e obsd.VMEdit
+	if !decode(w, r, &e) {
+		return
+	}
+	name := r.PathValue("name")
+	err := s.Host.UpdateVMSettings(r.Context(), name, &e)
+	s.audit(r, err, "vm settings %s mem=%s cpus=%d disks=%d", name, e.Memory, e.CPUs, len(e.Disks))
+	respond(w, msg{Message: "Einstellungen von " + name + " gespeichert."}, err)
+}

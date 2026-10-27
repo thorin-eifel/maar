@@ -2,6 +2,7 @@ package obsd
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -70,6 +71,7 @@ type VMConf struct {
 	Disks      []string  `json:"disks"`
 	CDROM      string    `json:"cdrom,omitempty"`
 	Boot       string    `json:"boot,omitempty"`
+	BootDev    string    `json:"bootDevice,omitempty"` // boot device cdrom|disk|net
 	Owner      string    `json:"owner,omitempty"`
 	Local      bool      `json:"local,omitempty"`
 	Interfaces []VMIface `json:"interfaces"`
@@ -178,6 +180,22 @@ func parseVMBody(name string, b []token) *VMConf {
 		case "cdrom":
 			vm.CDROM = next(k)
 			k++
+		case "allow":
+			// allow instance { … } hat eigene Voreinstellungen, die nicht zur VM gehören.
+			for k+1 < len(b) && b[k+1].s != "{" {
+				k++
+			}
+			depth := 0
+			for k+1 < len(b) {
+				k++
+				if b[k].s == "{" && !b[k].quoted {
+					depth++
+				} else if b[k].s == "}" && !b[k].quoted {
+					if depth--; depth <= 0 {
+						break
+					}
+				}
+			}
 		case "enable":
 			vm.Enabled = true
 		case "disable":
@@ -188,6 +206,7 @@ func parseVMBody(name string, b []token) *VMConf {
 		case "boot":
 			if next(k) == "device" {
 				vm.Boot = "device " + valueAt(b, k+2)
+				vm.BootDev = valueAt(b, k+2)
 				k += 2
 			} else {
 				vm.Boot = next(k)
@@ -438,4 +457,176 @@ func (s *VMSpec) Block() string {
 	}
 	b.WriteString("}\n")
 	return b.String()
+}
+
+// ---- Strukturierte Änderung eines VM-Blocks ----
+
+// VMEdit sind die Einstellungen, die die Oberfläche per Auswahl ändert. Alle
+// übrigen Anweisungen des Blocks (interface, boot <Kernel>, allow instance, …)
+// bleiben unberührt.
+type VMEdit struct {
+	Memory     string   `json:"memory"`
+	CPUs       int      `json:"cpus"`
+	SEV        string   `json:"sev"` // "", sev, seves
+	Enabled    bool     `json:"enabled"`
+	Disks      []string `json:"disks"`
+	CDROM      string   `json:"cdrom"`
+	BootDevice string   `json:"bootDevice"` // "", cdrom, disk, net
+	Owner      string   `json:"owner"`
+	Local      bool     `json:"local"`
+}
+
+// Edit liest die aktuellen Einstellungen zurück.
+func (v *VMConf) Edit() VMEdit {
+	e := VMEdit{Memory: v.Memory, CPUs: v.CPUs, SEV: v.SEV, Enabled: v.Enabled, Disks: append([]string{}, v.Disks...), CDROM: v.CDROM, Owner: v.Owner, Local: v.Local}
+	e.BootDevice = v.BootDev
+	return e
+}
+
+var vmDirectives = map[string]bool{"memory": true, "cpus": true, "cdrom": true, "owner": true, "sev": true, "seves": true, "enable": true, "disable": true,
+	"disk": true, "boot": true, "local": true, "interface": true, "interfaces": true, "allow": true, "instance": true}
+
+// skipBlock liefert den Index nach der schließenden Klammer, wenn toks[i] eine öffnende ist.
+func skipBlock(toks []token, i, limit int) int {
+	if i >= limit || toks[i].s != "{" || toks[i].quoted {
+		return i
+	}
+	depth := 0
+	for ; i < limit; i++ {
+		if toks[i].quoted {
+			continue
+		}
+		if toks[i].s == "{" {
+			depth++
+		} else if toks[i].s == "}" {
+			depth--
+			if depth == 0 {
+				return i + 1
+			}
+		}
+	}
+	return limit
+}
+
+type textEdit struct {
+	a, b int
+	repl string
+}
+
+// ApplyEdit ersetzt die zu e gehörenden Anweisungen im Block und lässt alles andere stehen.
+func (v *VMConf) ApplyEdit(e VMEdit, formats map[string]string) string {
+	raw := v.Raw
+	toks := tokenize(raw)
+	var edits []textEdit
+	open, closeIdx := -1, len(toks)
+	for i, t := range toks {
+		if t.s == "{" && !t.quoted {
+			open = i
+			break
+		}
+	}
+	if open < 0 {
+		return raw
+	}
+	if end := skipBlock(toks, open, len(toks)); end <= len(toks) && end > open {
+		closeIdx = end - 1
+	}
+	cut := func(a, b int) {
+		if ls := lineStart(raw, a); strings.TrimSpace(raw[ls:a]) == "" {
+			if le := lineEnd(raw, b); strings.TrimSpace(raw[b:le]) == "" {
+				a, b = ls, le
+			}
+		}
+		edits = append(edits, textEdit{a: a, b: b})
+	}
+	hadLocal := false
+	for i := open + 1; i < closeIdx; {
+		t := toks[i]
+		end, remove := i+1, false
+		if !t.quoted {
+			switch t.s {
+			case "memory", "cpus", "cdrom", "owner":
+				end, remove = i+2, true
+			case "sev", "seves", "enable", "disable":
+				end, remove = i+1, true
+			case "disk":
+				end, remove = i+2, true
+				if end < closeIdx && toks[end].s == "format" {
+					end += 2
+				}
+			case "boot":
+				if i+1 < closeIdx && toks[i+1].s == "device" {
+					end, remove = i+3, true
+				} else {
+					end = i + 2
+				}
+			case "local":
+				end = i + 2
+				for end < closeIdx && !vmDirectives[toks[end].s] && toks[end].s != "{" {
+					end++
+				}
+				end = skipBlock(toks, end, closeIdx)
+				hadLocal = true
+				remove = !e.Local
+			case "interface":
+				for end < closeIdx && !vmDirectives[toks[end].s] && toks[end].s != "{" {
+					end++
+				}
+				end = skipBlock(toks, end, closeIdx)
+			default:
+				for end < closeIdx && !vmDirectives[toks[end].s] && toks[end].s != "{" {
+					end++
+				}
+				end = skipBlock(toks, end, closeIdx)
+			}
+		}
+		if end > closeIdx {
+			end = closeIdx
+		}
+		if remove && end > i {
+			cut(toks[i].start, toks[end-1].end)
+		}
+		i = end
+	}
+	var b strings.Builder
+	line := func(f string, a ...any) { fmt.Fprintf(&b, "\n\t"+f, a...) }
+	line("memory %s", e.Memory)
+	if e.CPUs > 1 {
+		line("cpus %d", e.CPUs)
+	}
+	if e.SEV != "" {
+		line("%s", e.SEV)
+	}
+	if e.Enabled {
+		line("enable")
+	} else {
+		line("disable")
+	}
+	for _, d := range e.Disks {
+		if f := formats[d]; f != "" {
+			line("disk %s format %s", quote(d), f)
+		} else {
+			line("disk %s", quote(d))
+		}
+	}
+	if e.CDROM != "" {
+		line("cdrom %s", quote(e.CDROM))
+	}
+	if e.BootDevice != "" {
+		line("boot device %s", e.BootDevice)
+	}
+	if e.Owner != "" {
+		line("owner %s", e.Owner)
+	}
+	if e.Local && !hadLocal {
+		line("local interface")
+	}
+	edits = append(edits, textEdit{a: toks[open].end, b: toks[open].end, repl: b.String()})
+	// von hinten nach vorn anwenden, damit die Positionen gültig bleiben
+	sort.Slice(edits, func(i, j int) bool { return edits[i].a > edits[j].a })
+	out := raw
+	for _, ed := range edits {
+		out = out[:ed.a] + ed.repl + out[ed.b:]
+	}
+	return out
 }

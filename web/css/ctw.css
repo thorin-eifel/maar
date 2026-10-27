@@ -330,3 +330,10 @@ textarea.code:focus-visible{outline-offset:-3px}
 .name-link{color:inherit;text-decoration:none}.name-link:hover{text-decoration:underline}
 @media(max-width:1050px){.page.has-tree{grid-template-columns:minmax(190px,230px) minmax(0,1fr)}}
 @media(max-width:800px){.page.has-tree{display:flex}.inv-tree{position:static;max-height:260px;border-right:0;border-bottom:1px solid var(--line-soft)}.tabs{padding:0 16px;top:0;position:static}}
+/* VM-Einstellungen */
+.stack{display:grid;gap:6px}
+.disk-edit{display:grid;gap:8px}
+.disk-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line-soft)}
+.disk-name{overflow-wrap:anywhere;font-size:13px}
+details.expert{margin-top:14px}details.expert summary{cursor:pointer;color:var(--muted);font-size:13px}
+details.expert pre{margin:10px 0}

@@ -133,6 +133,25 @@ Die Absicht steht in `/var/maar/network.json`, alles andere wird daraus erzeugt 
 
 Bestehende Switches aus vm.conf werden als „vorgefunden“ übernommen; erst beim Speichern schreibt maar ihre Dateien. Ungetaggte Uplinks dürfen keine eigene IP haben. Deklariert dhcpd.conf ein Subnetz schon außerhalb des maar-Bereichs, bricht der Abgleich mit einem Hinweis ab. Ungeprüft auf echter Hardware: pf mit `link1` auf veb-Ports, Interface-Gruppen über `group` in vm.conf, unbound mit zusätzlichen `interface`-Zeilen.
 
+## Einstellungen per Auswahl statt Konfigurationsdatei
+
+Wo es geht, ändert maar Einstellungen über Formulare mit Auswahlfeldern, die nur Werte anbieten, die es auf dem Host gibt, und schreibt die Konfiguration im Hintergrund (mit Syntaxprüfung und Sicherung). Das verhindert Tippfehler und Werte, die nicht funktionieren.
+
+**VM-Einstellungen** (Knopf „Einstellungen“ an der VM, Reiter Konfigurieren, und der Dialog „Neue VM“):
+
+| Einstellung | Auswahl |
+|---|---|
+| Arbeitsspeicher | Vorgaben bis zum Hostspeicher, der aktuelle Wert, „Andere …“ (MB/GB, mindestens 64M) |
+| vCPUs | 1 bis 64; Werte über der Zahl der Hostkerne sind markiert |
+| SEV / SEV-ES | nur auf AMD-Hosts anwählbar |
+| Festplatten | nur freie Images (auch aus Datastores), Reihenfolge per Pfeil, „Neues Image …“ legt es sofort an; das Format wird mit `format qcow2/raw` explizit geschrieben |
+| CD-ROM | vorhandene ISOs; Boot von CD-ROM erst mit Medium wählbar |
+| Boot-Gerät | Standard, Festplatte, CD-ROM, Netzwerk (`boot device cdrom|disk|net`) |
+| Besitzer | Benutzer und Gruppe aus den Konten des Hosts |
+| Start / lokale Schnittstelle | Schalter |
+
+Alles andere im vm.conf-Block bleibt unverändert (Netzwerkadapter mit MAC, `boot <Kernel>`, `interfaces`, `allow instance`, …). Netzwerkadapter pflegst du weiter unter „Netzwerk“ (Portgruppe, MAC, feste Adresse). Der Server prüft alles noch einmal: Eine Disk, die einer anderen VM gehört, liegt außerhalb von `/var/vmd` oder fehlt, wird abgelehnt, ebenso unbekannte Konten oder mehr Speicher als der Host hat; dann bleibt vm.conf unberührt. Das Bearbeiten als Text bleibt für Experten erreichbar („vm.conf anzeigen“ im Reiter Konfigurieren).
+
 ## Rollen und Ereignisse
 
 Die Gruppe (`-group`, Standard `wheel`) entscheidet, wer sich anmelden darf; die Rolle, was danach erlaubt ist. Konten ohne Eintrag erhalten die Standardrolle (anfangs Administrator).

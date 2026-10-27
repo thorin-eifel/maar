@@ -3,6 +3,7 @@ import { get, post, put, del, q, upload } from '../api.js';
 import { watchJob, onJobDone } from '../jobs.js';
 import { deployDialog, toTemplateDialog } from '../deploy.js';
 import { backupNowDialog } from './backup.js';
+import { vmSettingsDialog, memoryField, cpuField, sevField, ownerField } from '../vmsettings.js';
 import { startFromISODialog, editBlockDialog, removeVMDialog, hardKillDialog } from '../vmactions.js';
 import { nicDialog, firewallDialog } from './vnet.js';
 
@@ -54,7 +55,7 @@ export default {
       if (running || paused) actions.push(btn('Hart beenden', async () => {
         if (await hardKillDialog(vm.name)) await act(vm, 'kill');
       }, 'mini-btn danger'));
-      if (vm.conf) actions.push(btn('Konfiguration', async () => editBlockDialog(vm, load)));
+      if (vm.conf) actions.push(btn('Einstellungen', async () => vmSettingsDialog(vm.name, { onDone: load, onExpert: () => editBlockDialog(vm, load) })));
       if (vm.conf) actions.push(btn('Netzwerk', () => nicDialog(vm.name, load)), btn('Firewall', () => firewallDialog(vm.name, load)));
       if (vm.conf && c.disks.length) actions.push(btn('Jetzt sichern', () => backupNowDialog([vm.name])));
       if (vm.conf && c.disks.length) actions.push(h('a', { class: 'mini-btn', href: `#/vms/${encodeURIComponent(vm.name)}/snapshots` }, vm.snapshots ? `Snapshots (${vm.snapshots})` : 'Snapshots'));
@@ -81,12 +82,11 @@ export default {
         h('footer', null, actions));
     }
 
-    function createVM() {
+    async function createVM() {
       const ov = data.overview;
+      const o = await get('/api/vm-options');
       const name = h('input', { required: true, pattern: '[A-Za-z0-9][A-Za-z0-9._\\-]{0,63}', placeholder: 'z. B. web02', autocomplete: 'off' });
-      const mem = h('select', null, ['512M', '1G', '2G', '4G', '8G', '16G', '32G', '64G'].map(m => h('option', { value: m, selected: m === '1G' }, m)));
-      const cpus = h('select', null, [1, 2, 4, 8, 16, 32, 64].map(n => h('option', { value: n, selected: n === 1 }, n === 1 ? '1 vCPU' : `${n} vCPUs`)));
-      const sev = h('select', null, h('option', { value: '' }, 'aus'), h('option', { value: 'sev' }, 'SEV'), h('option', { value: 'seves' }, 'SEV-ES (inkl. SEV)'));
+      const mem = memoryField(o, '1G'), cpus = cpuField(o, 1), sev = sevField(o, ''), owner = ownerField(o, '');
       const diskMode = h('select', null,
         h('option', { value: 'new' }, 'Neue Disk anlegen'),
         ov.images.length ? h('option', { value: 'base' }, 'Neue Disk auf Basis-Image (qcow2-Overlay)') : null,
@@ -99,7 +99,6 @@ export default {
       const bootCD = h('input', { type: 'checkbox', checked: true });
       const sw = ov.switches.map(s => ({ s, cb: h('input', { type: 'checkbox', checked: ov.switches.length === 1 }) }));
       const local = h('input', { type: 'checkbox', checked: !ov.switches.length });
-      const owner = h('input', { placeholder: 'optional: thorin, thorin:staff oder :staff', autocomplete: 'off', pattern: '([a-z_][a-z0-9_\\-]{0,30}(:[a-z_][a-z0-9_\\-]{0,30})?|:[a-z_][a-z0-9_\\-]{0,30})' });
       const enabled = h('input', { type: 'checkbox', checked: true });
       const startNow = h('input', { type: 'checkbox', checked: true });
 
@@ -118,22 +117,20 @@ export default {
         title: 'Neue virtuelle Maschine', meta: 'VMCTL CREATE · VM.CONF', wide: true, submit: 'VM anlegen',
         text: 'Die VM wird dauerhaft in /etc/vm.conf eingetragen. Für eine Installation ein ISO wählen und von CD-ROM booten; danach Konsole öffnen.',
         fields: [
-          field('Name', name), field('Arbeitsspeicher', mem),
-          field('Prozessoren', cpus, 'OpenBSD 8.0: bis zu 64 vCPUs je VM'),
-          field('Speicherverschlüsselung', sev, 'nur auf AMD-Hosts mit SEV-Unterstützung'),
+          field('Name', name), mem.el, cpus.el, sev.el,
           h('div', { class: 'wide' }, field('Festplatte', diskMode)), sizeF, fmtF, imgF,
           field('Installationsmedium', iso, `ISOs liegen unter ${ov.vmDir}/iso`),
           h('label', { class: 'check' }, bootCD, 'Von CD-ROM booten (für die Installation)'),
           h('fieldset', { class: 'wide field' }, h('legend', null, 'Netzwerk'),
             h('div', { class: 'toolbar' }, sw.map(({ s, cb }) => h('label', { class: 'check' }, cb, `Switch ${s.name} (${s.interface})`)),
               h('label', { class: 'check' }, local, 'Lokale Schnittstelle (NAT über vmd, 100.64.0.0/10)'))),
-          field('Besitzer', owner, 'Benutzer und/oder Gruppe dürfen die VM per vmctl ohne root steuern'),
+          owner.el,
           h('div', { class: 'toolbar' }, h('label', { class: 'check' }, enabled, 'Beim Systemstart starten'), h('label', { class: 'check' }, startNow, 'Sofort starten')),
         ],
         onSubmit: async () => {
           const m = diskMode.value;
           const spec = {
-            name: name.value.trim(), memory: mem.value, cpus: Number(cpus.value), sev: sev.value, owner: owner.value.trim(), enabled: enabled.checked, startNow: startNow.checked,
+            name: name.value.trim(), memory: mem.value(), cpus: cpus.value(), sev: sev.value(), owner: owner.value(), enabled: enabled.checked, startNow: startNow.checked,
             cdrom: iso.value, bootCdrom: !!iso.value && bootCD.checked, local: local.checked,
             switches: sw.filter(x => x.cb.checked).map(x => x.s.name),
           };
@@ -229,7 +226,7 @@ export default {
             h('a', { class: 'mini-btn', href: '#/vnet' }, 'Portgruppen verwalten'))));
     }
 
-    newBtn.addEventListener('click', () => data && createVM());
+    newBtn.addEventListener('click', () => data && createVM().catch(toastError));
     refreshBtn.addEventListener('click', () => busy(refreshBtn, load).catch(toastError));
     await load();
     const off = onJobDone(() => load().catch(() => {}));
