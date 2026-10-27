@@ -14,6 +14,7 @@ export function aboutDialog() {
     kv([
       ['Version', h('code', null, session.version)],
       ['Dieser Host', session.hostname + (session.demo ? ' (Demo)' : '')],
+      ['Lizenz', link('https://github.com/thorin-eifel/maar/blob/main/LICENSE', 'ISC · © 2026 IT-Haus CTW-Computer Irrel GmbH')],
       ['Quellcode', link('https://github.com/thorin-eifel/maar', 'github.com/thorin-eifel/maar')],
       ['Releases', link('https://github.com/thorin-eifel/maar/releases', 'Versionen und Änderungen')],
     ]));

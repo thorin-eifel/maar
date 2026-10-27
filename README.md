@@ -52,7 +52,7 @@ temporären Sandbox, die VM-Konsolen sind simuliert.
 - [Netzwerk und Speicher](#netzwerk-und-speicher): [VM-Netze](#vm-netze) · [Geteilter Speicher](#geteilter-speicher)
 - [Host-Einstellungen per Formular](#host-einstellungen-per-formular)
 - [Zugriff und mehrere Hosts](#zugriff-und-mehrere-hosts)
-- [Installation und Betrieb](#installation-und-betrieb) · [Sicherheit](#sicherheit) · [Entwicklung](#entwicklung) · [Grenzen](#grenzen-dieser-version)
+- [Installation und Betrieb](#installation-und-betrieb) · [Sicherheit](#sicherheit) · [Entwicklung](#entwicklung) · [Grenzen](#grenzen-dieser-version) · [Lizenz](#lizenz)
 
 ## Funktionen im Überblick
 
@@ -356,3 +356,9 @@ install.sh          Installationsskript für Releases
 - Keine Partitionierung (`disklabel -E`, `newfs`) per Klick – dafür ist die Host-Shell da.
 - Kein Live-Snapshot und keine VM-Migration zwischen Hosts (vmd bietet beides nicht).
 - Sitzungen liegen im Speicher; ein Neustart des Dienstes meldet alle ab.
+
+## Lizenz
+
+maar steht unter der [ISC-Lizenz](LICENSE) (Copyright © 2026 IT-Haus CTW-Computer Irrel GmbH). Name und
+Logo von CTW sind davon ausgenommen, Details und Lizenzen eingebetteter Software stehen in
+[NOTICE.md](NOTICE.md).
