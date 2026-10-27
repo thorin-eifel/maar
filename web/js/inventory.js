@@ -76,7 +76,7 @@ export function createInventory() {
       n.icon ? icon(n.icon, { cls: 'tree-icon' + (n.state ? ' st-' + n.state : '') }) : null, n.state ? dot(n.state) : null, h('span', { class: 'tree-label' }, n.label), n.count !== undefined ? h('span', { class: 'tree-count' }, n.count) : null, n.hint ? h('span', { class: 'tree-hint' }, n.hint) : null);
     const line = h('div', { class: 'tree-row' });
     if (kids) {
-      const tg = h('button', { class: 'tree-toggle', type: 'button', tabindex: '-1', 'aria-label': `${n.label} ${expanded ? 'einklappen' : 'ausklappen'}` }, expanded ? '▾' : '▸');
+      const tg = h('button', { class: 'tree-toggle', type: 'button', tabindex: '-1', 'aria-label': `${n.label} ${expanded ? 'einklappen' : 'ausklappen'}` }, icon(expanded ? 'chevron-down' : 'chevron-right', { cls: 'tree-chev' }));
       tg.addEventListener('click', e => { e.preventDefault(); toggle(n.id); });
       line.append(tg);
       link.style.paddingLeft = `${4 + (depth - 1) * 16}px`;

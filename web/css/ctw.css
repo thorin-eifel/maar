@@ -316,7 +316,9 @@ textarea.code:focus-visible{outline-offset:-3px}
 .side-nav .nav-flat{display:none}
 .tree,.tree ul{list-style:none;margin:0;padding:0}
 .tree-row{display:flex;align-items:center;min-width:0}
-.tree-toggle{border:0;background:none;color:var(--muted);width:20px;height:26px;font-size:11px;cursor:pointer;padding:0;flex:none}
+.tree-toggle{border:0;background:none;color:var(--muted);width:24px;height:28px;cursor:pointer;padding:0;flex:none;display:inline-flex;align-items:center;justify-content:center;border-radius:4px}
+.tree-toggle:hover{color:var(--ink);background:var(--brand-teal-200)}
+.tree-chev{width:16px;height:16px;stroke-width:2.4}
 .tree-link{display:flex;align-items:center;gap:7px;flex:1;min-width:0;padding:4px 8px;border-radius:4px;font-size:13px;color:var(--ink);text-decoration:none;line-height:1.4}
 .tree-link:hover{background:var(--brand-teal-200);color:var(--brand-teal-900)}
 .tree-link[aria-current="page"]{background:var(--ink);color:var(--bg)}
