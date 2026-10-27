@@ -102,6 +102,9 @@ func TestRolesAndEvents(t *testing.T) {
 	if code, _ := do(t, c, "GET", ts.URL+"/api/services", csrf, ""); code != 200 {
 		t.Errorf("viewer lesen: %d", code)
 	}
+	if code, _ := do(t, c, "GET", ts.URL+"/api/conf/ssh", csrf, ""); code != http.StatusForbidden {
+		t.Errorf("viewer liest sshd-Formular: %d", code)
+	}
 	if code, _ := do(t, c, "GET", ts.URL+"/ws/console/vm/web01", csrf, ""); code != http.StatusForbidden {
 		t.Errorf("viewer Konsole: %d", code)
 	}
@@ -120,6 +123,19 @@ func TestRolesAndEvents(t *testing.T) {
 	}
 	if _, out := do(t, c, "GET", ts.URL+"/api/events?q=vm+pause", csrf, ""); !strings.Contains(out, "vm pause web01") {
 		t.Errorf("Ereignis der Aktion fehlt: %s", out)
+	}
+	// Formulare für Systemdateien: Administrator liest, Vorschau schreibt nichts, Speichern prüft den Aussperrschutz.
+	if code, out := do(t, c, "GET", ts.URL+"/api/conf/ntp", csrf, ""); code != 200 || !strings.Contains(out, "pool.ntp.org") {
+		t.Errorf("ntp lesen: %d %.100s", code, out)
+	}
+	if code, out := do(t, c, "PUT", ts.URL+"/api/conf/resolv?preview=1", csrf, `{"nameservers":["192.168.50.1"],"lookup":["file","bind"],"search":["ctw.lan"]}`); code != 200 || !strings.Contains(out, "nameserver 192.168.50.1") {
+		t.Errorf("resolv Vorschau: %d %.200s", code, out)
+	}
+	if code, out := do(t, c, "PUT", ts.URL+"/api/conf/ssh", csrf, `{"allowUsers":["thorin"]}`); code != 400 || !strings.Contains(out, "aussperren") {
+		t.Errorf("ssh Aussperrschutz (demo nicht in AllowUsers): %d %.200s", code, out)
+	}
+	if code, _ := do(t, c, "GET", ts.URL+"/api/conf/gibtsnicht", csrf, ""); code != 404 {
+		t.Errorf("unbekannte Konfiguration: %d", code)
 	}
 	// Auftragsende und Alarm bei verweigertem Zugriff.
 	if code, out := do(t, c, "POST", ts.URL+"/api/packages/update", csrf, `{"names":[]}`); code != 200 {

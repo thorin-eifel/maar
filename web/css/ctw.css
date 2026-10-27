@@ -337,3 +337,5 @@ textarea.code:focus-visible{outline-offset:-3px}
 .disk-name{overflow-wrap:anywhere;font-size:13px}
 details.expert{margin-top:14px}details.expert summary{cursor:pointer;color:var(--muted);font-size:13px}
 details.expert pre{margin:10px 0}
+.cf-rows{display:grid;gap:10px}.cf-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding-bottom:10px;border-bottom:1px solid var(--line-soft)}.cf-fields{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;flex:1}.cf-fields .field{min-width:150px}.checks .check{min-width:200px}
+.note.ok{border-color:oklch(62% .15 150);background:var(--surface-soft)}

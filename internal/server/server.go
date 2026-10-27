@@ -95,6 +95,8 @@ func (s *Server) Handler() http.Handler {
 	api("POST /api/vm-switches", s.addSwitch)
 	api("POST /api/vms/{name}/to-template", s.vmToTemplate)
 	api("POST /api/vms/{name}/clone", s.deploy("vm"))
+	api("GET /api/conf/{kind}", s.confGet)
+	api("PUT /api/conf/{kind}", s.confPut)
 	api("GET /api/vm-options", s.vmOptions)
 	api("GET /api/vms/{name}/options", s.vmOptions)
 	api("PUT /api/vms/{name}/settings", s.vmSettings)

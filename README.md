@@ -152,6 +152,17 @@ Wo es geht, ändert maar Einstellungen über Formulare mit Auswahlfeldern, die n
 
 Alles andere im vm.conf-Block bleibt unverändert (Netzwerkadapter mit MAC, `boot <Kernel>`, `interfaces`, `allow instance`, …). Netzwerkadapter pflegst du weiter unter „Netzwerk“ (Portgruppe, MAC, feste Adresse). Der Server prüft alles noch einmal: Eine Disk, die einer anderen VM gehört, liegt außerhalb von `/var/vmd` oder fehlt, wird abgelehnt, ebenso unbekannte Konten oder mehr Speicher als der Host hat; dann bleibt vm.conf unberührt. Das Bearbeiten als Text bleibt für Experten erreichbar („vm.conf anzeigen“ im Reiter Konfigurieren).
 
+**Zeit, Namen & SSH** (Host-Konfiguration → „Zeit, Namen & SSH“, nur Administratoren): Formulare für `/etc/ntpd.conf`, `/etc/resolv.conf`, `/etc/hosts` und `/etc/ssh/sshd_config`. Jedes Formular hat eine **Vorschau** der Datei, die entstehen würde, und schreibt erst bei „Speichern und anwenden“ – mit Syntaxprüfung (`ntpd -n`, `sshd -t`), Sicherung der alten Fassung und anschließendem Neustart bzw. Neuladen des Dienstes. Kommentare und alle Zeilen, die das Formular nicht kennt, bleiben unverändert und werden angezeigt.
+
+| Datei | Auswahl |
+|---|---|
+| ntpd.conf | Server (einzeln oder Pool, Gewicht 1–10, vertrauenswürdig), nur tatsächlich vorhandene Zeit-Sensoren (`hw.sensors`), Constraints (HTTPS), „listen on“ mit den Adressen des Hosts; Status aus `ntpctl -s all` |
+| resolv.conf | bis zu 5 Nameserver (Vorschläge: laufender Resolver, Gateway, öffentliche Resolver), Suchdomänen (max. 6), Reihenfolge `lookup`, `family`, `edns0`, `tcp`, `trust-ad`, `ndots`; Warnung, wenn `resolvd` die Datei umschreiben kann |
+| hosts | Tabelle der Einträge (Adresse, Namen, Kommentar), VM-Adressen aus den VM-Netzen übernehmen; `localhost` bleibt immer erhalten |
+| sshd_config | Root-Anmeldung, Passwort/Schlüssel/Tastatur-interaktiv, `AllowUsers`/`AllowGroups` aus den Konten (mit Anzahl hinterlegter Schlüssel), Ports, `ListenAddress` aus den Host-Adressen, Fehlversuche, Weiterleitungen, Protokollstufe |
+
+Der SSH-Teil schützt vor dem Aussperren: Abgelehnt werden Einstellungen, bei denen keine Anmeldemethode übrig bliebe, du selbst nicht mehr in `AllowUsers`/`AllowGroups` stündest oder du die Passwort-Anmeldung abschaltest, ohne einen Schlüssel in `~/.ssh/authorized_keys` zu haben. Geändert wird nur der globale Teil vor dem ersten `Match`; Match-Blöcke bleiben, und ein Hinweis nennt sie. Bei geänderten Ports prüft maar, ob `pf.conf` sie erwähnt.
+
 ## Rollen und Ereignisse
 
 Die Gruppe (`-group`, Standard `wheel`) entscheidet, wer sich anmelden darf; die Rolle, was danach erlaubt ist. Konten ohne Eintrag erhalten die Standardrolle (anfangs Administrator).

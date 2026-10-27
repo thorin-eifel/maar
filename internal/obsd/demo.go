@@ -185,6 +185,8 @@ func (d *DemoRunner) Run(ctx context.Context, stdin []byte, name string, args ..
 			return d.sanMount(args[0])
 		}
 		return ok(demoMount + d.sanMountLines())
+	case "ntpctl":
+		return ok(demoNtpctl)
 	case "dmesg":
 		return ok(demoDmesg)
 	case "fdisk", "newfs":
@@ -355,6 +357,9 @@ func (d *DemoRunner) psVMs(args []string) string {
 }
 
 func (d *DemoRunner) sysctl(args []string) (Result, error) {
+	if len(args) == 1 && args[0] == "hw.sensors" {
+		return ok("hw.sensors.cpu0.temp0=48.00 degC\nhw.sensors.udcf0.timedelta0=0.001840 secs (ok), OK, Mon Oct 27 14:02:11.000\nhw.sensors.gps0.timedelta0=-0.000212 secs (ok), OK\n")
+	}
 	if len(args) == 2 && args[0] == "-n" && args[1] == "kern.cp_time" {
 		d.advance()
 		s := make([]string, len(d.cpuTicks))

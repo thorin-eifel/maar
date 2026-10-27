@@ -310,3 +310,29 @@ sd2: 512000MB, 512 bytes/sector, 1048576000 sectors
 sd3 at scsibus4 targ 2 lun 0: <LIO-ORG, scratch, 4.0> naa.60014057b2d9a0c1e33f4e2b8a6d5f10
 sd3: 204800MB, 512 bytes/sector, 419430400 sectors
 `
+
+const demoNtpctl = `4/4 peers valid, constraint offset -1s, clock synced, stratum 3
+
+peer
+   wt tl st  next  poll          offset       delay      jitter
+81.169.155.234 from pool pool.ntp.org
+    1 10  2   32s   33s         0.231ms    14.512ms     0.184ms
+185.232.69.65 from pool pool.ntp.org
+ *  1 10  2   15s   33s        -0.087ms    12.883ms     0.241ms
+162.159.200.123 from pool pool.ntp.org
+    1 10  3   12s   34s         0.345ms    11.207ms     0.311ms
+94.130.49.186 from pool pool.ntp.org
+    1 10  2   29s   32s         0.102ms    13.940ms     0.152ms
+
+sensor
+   wt gd st  next  poll          offset  correction
+udcf0
+ *  1  1  0    4s   15s        1.840ms      0.000ms
+gps0
+    1  1  0    9s   15s       -0.212ms      0.000ms
+
+constraint
+   offset        status
+9.9.9.9 from constraints 9.9.9.9
+     -1s         ok
+`

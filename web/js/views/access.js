@@ -110,7 +110,7 @@ export default {
   title: 'Zugriffssteuerung',
   async render(main) {
     const body = h('div', { class: 'content' });
-    main.append(pageHead('21 / VERWALTUNG', 'Zugriffssteuerung', `Rollen und VM-Zugriff je Konto sowie API-Token für die Anbindung weiterer Hosts. Du bist angemeldet als ${session.user} (${ROLE[session.role] || session.role}).`), body);
+    main.append(pageHead('22 / VERWALTUNG', 'Zugriffssteuerung', `Rollen und VM-Zugriff je Konto sowie API-Token für die Anbindung weiterer Hosts. Du bist angemeldet als ${session.user} (${ROLE[session.role] || session.role}).`), body);
     if (session.role !== 'admin') {
       clear(body, h('div', { class: 'note' }, 'Die Verwaltung von Rollen und Token ist Administratoren vorbehalten. Dein Zugriff: ', ROLE[session.role] || session.role, session.vms?.length ? ` (nur VMs: ${session.vms.join(', ')})` : '', '.'));
       return;
