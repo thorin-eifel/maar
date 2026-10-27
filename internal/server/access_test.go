@@ -68,6 +68,8 @@ func TestRolesAndEvents(t *testing.T) {
 		{"GET", vm + "web01/snapshots", "", false},
 		{"GET", vm + "web01/detail", "", false},
 		{"GET", vm + "db01/detail", "", true},
+		{"GET", ts.URL + "/api/san/datastores/vm-pool", "", false},
+		{"GET", ts.URL + "/api/vnet/portgroups/intern", "", false},
 		{"GET", ts.URL + "/api/overview", "", false},
 		{"POST", vm + "web01/kill", "", true},
 		{"POST", vm + "db01/stop", "", true},
@@ -84,6 +86,9 @@ func TestRolesAndEvents(t *testing.T) {
 	}
 	if _, out := do(t, c, "GET", vm, csrf, ""); strings.Contains(out, `"db01"`) {
 		t.Errorf("VM-Liste zeigt db01 trotz Eingrenzung")
+	}
+	if _, out := do(t, c, "GET", ts.URL+"/api/vnet/portgroups/intern", csrf, ""); strings.Contains(out, `"db01"`) || !strings.Contains(out, `"web01"`) {
+		t.Errorf("Portgruppe ignoriert die Eingrenzung: %.300s", out)
 	}
 	if _, out := do(t, c, "GET", ts.URL+"/api/hosts", csrf, ""); strings.Contains(out, `"db01"`) || !strings.Contains(out, `"web01"`) {
 		t.Errorf("Hostliste ignoriert die Eingrenzung: %.200s", out)

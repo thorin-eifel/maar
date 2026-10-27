@@ -238,3 +238,12 @@ func (s *Server) accessPut(w http.ResponseWriter, r *http.Request) {
 	s.audit(r, err, "Zugriff geändert: Standard %s, %d Einträge", c.Default, len(c.Users))
 	respond(w, msg{Message: "Zugriffsrechte gespeichert."}, err)
 }
+
+// scope liefert die VM-Eingrenzung des angemeldeten Kontos (nil = uneingeschränkt).
+func (s *Server) scope(r *http.Request) []string {
+	g := s.Access.For(sessionFrom(r).User)
+	if g.Role == "admin" || len(g.VMs) == 0 {
+		return nil
+	}
+	return g.VMs
+}

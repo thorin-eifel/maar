@@ -197,7 +197,7 @@ export default {
     async function load() {
       net = await get('/api/vnet');
       const pgRows = net.portGroups.map(p => h('tr', null,
-        h('td', null, h('span', { class: 'name' }, p.name), p.description ? h('span', { class: 'sub' }, p.description) : null),
+        h('td', null, h('a', { class: 'name', href: `#/portgroup/${enc(p.name)}` }, p.name), p.description ? h('span', { class: 'sub' }, p.description) : null),
         h('td', { class: 'mono' }, p.bridge, h('span', { class: 'sub' }, p.vlan ? `vlan${p.vlan} auf ${p.uplink}` : p.uplink ? `Uplink ${p.uplink}` : 'nur intern')),
         h('td', { class: 'mono' }, p.subnet || '–', p.gateway ? h('span', { class: 'sub' }, `Gateway ${p.gateway.split('/')[0]} · ${p.vport}`) : h('span', { class: 'sub' }, 'reines L2')),
         h('td', null, services(p)),

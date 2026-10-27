@@ -32,8 +32,8 @@ export function createInventory() {
           children: s.vms.map(v => ({ id: `vm:${id}:${v.name}`, label: v.name, state: v.state, href: x.local ? `#/vm/${enc(v.name)}` : `#/hosts/${enc(id)}`, leaf: true })) });
         if (x.local) {
           if (s.templates?.length) kids.push({ id: 'tpl', label: 'Templates', count: s.templates.length, href: '#/templates', folder: true, children: s.templates.map(t => ({ id: `tpl:${t}`, label: t, href: '#/templates', leaf: true })) });
-          if (s.datastores?.length) kids.push({ id: 'ds', label: 'Datastores', count: s.datastores.length, href: '#/san', folder: true, children: s.datastores.map(t => ({ id: `ds:${t}`, label: t, href: '#/san', leaf: true })) });
-          if (s.portGroups?.length) kids.push({ id: 'pg', label: 'Portgruppen', count: s.portGroups.length, href: '#/vnet', folder: true, children: s.portGroups.map(t => ({ id: `pg:${t}`, label: t, href: '#/vnet', leaf: true })) });
+          if (s.datastores?.length) kids.push({ id: 'ds', label: 'Datastores', count: s.datastores.length, href: '#/san', folder: true, children: s.datastores.map(t => ({ id: `ds:${t}`, label: t, href: `#/datastore/${enc(t)}`, leaf: true })) });
+          if (s.portGroups?.length) kids.push({ id: 'pg', label: 'Portgruppen', count: s.portGroups.length, href: '#/vnet', folder: true, children: s.portGroups.map(t => ({ id: `pg:${t}`, label: t, href: `#/portgroup/${enc(t)}`, leaf: true })) });
         }
       }
       nodes.push({ id: `host:${id}`, label: x.name || id, state: x.status === 'ok' ? 'running' : 'offline', host: true, hint: x.local ? 'dieser Host' : '', href: `#/hosts/${enc(id)}`, children: kids });
@@ -50,6 +50,10 @@ export function createInventory() {
     if (path === 'hosts') return a ? `host:${a}` : 'hosts';
     if (path === 'vms') return 'vms:local';
     if (path === 'templates') return 'tpl';
+    if (path === 'datastore') return `ds:${a}`;
+    if (path === 'portgroup') return `pg:${a}`;
+    if (path === 'san') return 'ds';
+    if (path === 'vnet') return 'pg';
     return '';
   }
 
@@ -74,8 +78,18 @@ export function createInventory() {
 
   function toggle(id) { open.has(id) ? open.delete(id) : open.add(id); saveOpen(open); draw(); }
 
+  // Den Zweig des aktuellen Objekts aufklappen, damit man es im Baum sieht.
+  function reveal(cur) {
+    const parent = cur.startsWith('ds:') ? 'ds' : cur.startsWith('pg:') ? 'pg' : cur.startsWith('tpl:') ? 'tpl' : cur.startsWith('vm:') ? `vms:${cur.split(':')[1]}` : null;
+    const host = cur.startsWith('vm:') ? `host:${cur.split(':')[1]}` : (parent ? 'host:local' : null);
+    let changed = false;
+    for (const id of ['hosts', host, parent]) if (id && !open.has(id)) { open.add(id); changed = true; }
+    if (changed) saveOpen(open);
+  }
+
   function draw() {
     const cur = currentId();
+    if (cur) reveal(cur);
     const keep = document.activeElement?.closest?.('.inv-tree') ? document.activeElement.getAttribute('href') : null;
     const roots = model().filter(n => !filter || subtree(n));
     clear(list, roots.length ? roots.map(n => row(n, 1, cur)) : h('li', { class: 'empty' }, 'Keine Treffer.'));

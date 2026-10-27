@@ -67,7 +67,7 @@ export default {
 
     function drawDatastores() {
       const rows = data.datastores.map(d => h('tr', null,
-        h('td', null, h('span', { class: 'name' }, d.name), h('span', { class: 'sub mono' }, d.mount)),
+        h('td', null, h('a', { class: 'name', href: `#/datastore/${enc(d.name)}` }, d.name), h('span', { class: 'sub mono' }, d.mount)),
         h('td', { class: 'mono' }, d.present ? d.disk : h('span', { class: 'sub' }, 'Disk fehlt'), h('span', { class: 'sub mono' }, d.duid)),
         h('td', null, d.mounted ? h('div', { class: d.percent > 90 ? 'bar crit' : d.percent > 75 ? 'bar warn' : 'bar', role: 'meter', 'aria-valuenow': String(d.percent), 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-label': `${d.name} belegt` }, (() => { const i = h('i'); i.style.width = d.percent + '%'; return i; })()) : null,
           h('span', { class: 'sub' }, d.mounted ? `${bytes(d.used)} von ${bytes(d.size)} · ${d.percent} %` : bytes(d.size))),

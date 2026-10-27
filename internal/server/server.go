@@ -142,6 +142,8 @@ func (s *Server) Handler() http.Handler {
 	api("POST /api/san/iscsi", s.saveISCSI)
 	api("PUT /api/san/iscsi/{name}", s.saveISCSI)
 	api("DELETE /api/san/iscsi/{name}", s.deleteISCSI)
+	api("GET /api/san/datastores/{name}", s.datastoreDetail)
+	api("GET /api/vnet/portgroups/{name}", s.portGroupDetail)
 	api("POST /api/san/datastores", s.initDatastore)
 	api("POST /api/san/datastores/{name}/{action}", s.datastoreAction)
 	api("DELETE /api/san/datastores/{name}", s.removeDatastore)

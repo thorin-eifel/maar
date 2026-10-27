@@ -15,6 +15,8 @@ Das Menü folgt der Logik des vSphere Clients: **Inventar** (Hosts, VMs, Templat
 
 **VM-Detailseite** (Klick auf eine VM im Baum oder in der Liste) mit den Reitern Zusammenfassung (Status, CPU, Speicher, Hardware, Netz, Firewall, Sicherung, Ereignisse), Überwachen (Verlauf, Alarme, Ereignisse), Konfigurieren (vm.conf, Festplatten mit Format, Größe, Datastore und Basis-Template, Netzwerk, Firewall), Snapshots und Sicherung. Die Reiter sind verlinkbar (`#/vm/<name>/<reiter>`).
 
+**Datastore- und Portgruppen-Seiten** (Klick im Baum oder in den Listen): Beide zeigen „Verwendet von“ – beim Datastore die VMs mit Disks darauf samt Belegung, die Images (unbenutzte werden markiert) und das Gerät dahinter (Transport, WWN, DUID); bei der Portgruppe alle VM-Anschlüsse mit Status, MAC, Adresse, DNS-Name und Firewall, die Konfiguration (Uplink, VLAN, Gateway, NAT, DHCP, DNS) und die erzeugten Dateien. Eingegrenzte Konten sehen dort nur ihre VMs und die Zahl der ausgeblendeten.
+
 | Bereich | Was geht | Werkzeuge darunter |
 |---|---|---|
 | Übersicht | CPU, Speicher, Laufzeit, Dateisysteme, VMs, ausgefallene Dienste, pf-Status | `sysctl`, `top -b`, `df`, `ifconfig` |

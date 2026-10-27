@@ -17,7 +17,7 @@ const NAV = [
 const app = document.getElementById('app');
 let main = null, crumb = null, cleanup = null, inventory = null, pageEl = null, treeBtn = null;
 // Seiten, neben denen der Inventarbaum steht (wie die Inventaransichten im vSphere Client).
-const TREE_KEYS = new Set(['hosts', 'vms', 'vm', 'templates', 'console']);
+const TREE_KEYS = new Set(['hosts', 'vms', 'vm', 'templates', 'console', 'datastore', 'portgroup', 'san', 'vnet']);
 const treeShown = () => { try { return localStorage.getItem('maar.tree.hidden') !== '1'; } catch { return true; } };
 
 function setTheme(btn) {
@@ -130,6 +130,8 @@ const routes = {
   events: () => import('./views/events.js'),
   hosts: () => import('./views/hosts.js'),
   san: () => import('./views/san.js'),
+  datastore: () => import('./views/datastore.js'),
+  portgroup: () => import('./views/portgroup.js'),
 };
 
 let routeSeq = 0, routeKey = '';
@@ -141,7 +143,7 @@ async function route() {
   const key = routes[parts[0]] ? parts[0] : '';
   routeKey = key;
   const seq = ++routeSeq;
-  const navKey = key === 'vm' ? 'vms' : key;
+  const navKey = { vm: 'vms', datastore: 'san', portgroup: 'vnet' }[key] || key;
   if (cleanup) { try { cleanup(); } catch { /* egal */ } cleanup = null; }
   for (const a of app.querySelectorAll('.side-nav a')) {
     if ((a.dataset.key === 'dashboard' && key === '') || a.dataset.key === navKey) a.setAttribute('aria-current', 'page');

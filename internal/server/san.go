@@ -56,3 +56,13 @@ func (s *Server) removeDatastore(w http.ResponseWriter, r *http.Request) {
 	s.audit(r, err, "datastore remove %s", name)
 	respond(w, msg{Message: "Datastore " + name + " entfernt. Die Daten auf der Disk sind unberührt."}, err)
 }
+
+func (s *Server) datastoreDetail(w http.ResponseWriter, r *http.Request) {
+	d, err := s.Host.DatastoreDetail(r.Context(), r.PathValue("name"), s.scope(r))
+	respond(w, d, err)
+}
+
+func (s *Server) portGroupDetail(w http.ResponseWriter, r *http.Request) {
+	d, err := s.Host.PortGroupDetail(r.Context(), r.PathValue("name"), s.scope(r))
+	respond(w, d, err)
+}
