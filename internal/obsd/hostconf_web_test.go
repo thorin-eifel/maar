@@ -2,6 +2,7 @@ package obsd
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"testing"
 )
@@ -202,5 +203,116 @@ func TestSMTPDForm(t *testing.T) {
 	}
 	if after, _ := h.readFile(smtpdPath); after != before {
 		t.Error("abgelehnte Eingaben haben smtpd.conf verändert")
+	}
+}
+
+func TestMailTablesForm(t *testing.T) {
+	h := newDemoHost(t)
+	ctx := context.Background()
+	// virtuelle Benutzer über das smtpd-Formular anlegen
+	v, _ := h.SMTPD(ctx)
+	c := v.Conf
+	c.Tables = append(c.Tables, SMTPTable{Name: "vusers", Type: "file", Path: "/etc/mail/virtual"}, SMTPTable{Name: "creds", Type: "file", Path: "/etc/mail/secrets"})
+	c.Actions = append(c.Actions, SMTPAction{Name: "virt", Method: "mbox", Virtual: "vusers"}, SMTPAction{Name: "sm", Method: "relay", Host: "smtp+tls://m.example.org", TLS: "tls", Auth: "creds"})
+	h.writeAtomic("/etc/mail/virtual", []byte("# virtuelle Adressen\ninfo@ctw.lan\tthorin\n@ctw.lan\tmara, root\n"), 0o644)
+	h.writeAtomic("/etc/mail/secrets", []byte("mailuser $2b$09$geheimerhash\n"), 0o600)
+	if _, err := h.SaveSMTPD(ctx, &c, false, false); err != nil {
+		t.Fatal(err)
+	}
+	m, err := h.MailTables(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	byName := map[string]MailTable{}
+	for _, tb := range m.Tables {
+		byName[tb.Name] = tb
+	}
+	if len(m.Tables) != 2 || byName["aliases"].Kind != "aliases" || byName["vusers"].Kind != "virtual" || len(byName["aliases"].Entries) != 3 || byName["vusers"].Entries[1].Key != "@ctw.lan" || len(byName["vusers"].Entries[1].Targets) != 2 {
+		t.Fatalf("Tabellen: %+v", m.Tables)
+	}
+	if len(m.Hidden) != 1 || m.Hidden[0] != "creds" {
+		t.Errorf("Anmeldetabelle nicht verborgen: %v", m.Hidden)
+	}
+	if b, _ := json.Marshal(m); strings.Contains(string(b), "geheimerhash") {
+		t.Error("Passwort-Hash im Ergebnis")
+	}
+	if _, err := h.SaveMailTable(ctx, "creds", nil, false); err == nil {
+		t.Error("Anmeldetabelle bearbeitbar")
+	}
+	// Alias ändern, neuen anlegen; Kommentare bleiben
+	al := byName["aliases"].Entries
+	al[2].Targets = []string{"thorin", "mara@example.org"}
+	al = append(al, MailEntry{Key: "abuse", Targets: []string{"postmaster"}})
+	res, err := h.SaveMailTable(ctx, "aliases", al, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, _ := h.readFile("/etc/mail/aliases")
+	for _, w := range []string{"# Aliases", "MAILER-DAEMON: postmaster", "root: thorin, mara@example.org", "abuse: postmaster"} {
+		if !strings.Contains(got, w) {
+			t.Errorf("%q fehlt:\n%s", w, got)
+		}
+	}
+	if !strings.Contains(res.Applied, "neu eingelesen") {
+		t.Errorf("Anwenden: %+v", res)
+	}
+	// Ablehnungen und Schutz
+	before, _ := h.readFile("/etc/mail/aliases")
+	cur, _ := h.MailTables(ctx)
+	var base []MailEntry
+	for _, tb := range cur.Tables {
+		if tb.Name == "aliases" {
+			base = tb.Entries
+		}
+	}
+	mk := func(mod func(e []MailEntry) []MailEntry) []MailEntry {
+		return mod(append([]MailEntry{}, base...))
+	}
+	for i, es := range [][]MailEntry{
+		mk(func(e []MailEntry) []MailEntry { // root entfernen
+			var out []MailEntry
+			for _, x := range e {
+				if x.Key != "root" {
+					out = append(out, x)
+				}
+			}
+			return out
+		}),
+		mk(func(e []MailEntry) []MailEntry {
+			return append(e, MailEntry{Key: "a", Targets: []string{"b"}}, MailEntry{Key: "b", Targets: []string{"a"}})
+		}),
+		mk(func(e []MailEntry) []MailEntry { return append(e, MailEntry{Key: "x", Targets: []string{"|/bin/sh"}}) }),
+		mk(func(e []MailEntry) []MailEntry {
+			return append(e, MailEntry{Key: "x", Targets: []string{"/etc/passwd"}})
+		}),
+		mk(func(e []MailEntry) []MailEntry {
+			return append(e, MailEntry{Key: "x", Targets: []string{"gibtsnicht"}})
+		}),
+		mk(func(e []MailEntry) []MailEntry { return append(e, MailEntry{Key: "x y", Targets: []string{"thorin"}}) }),
+		mk(func(e []MailEntry) []MailEntry { return append(e, MailEntry{Key: "root", Targets: []string{"thorin"}}) }),
+		mk(func(e []MailEntry) []MailEntry { return append(e, MailEntry{Key: "x", Targets: nil}) }),
+		mk(func(e []MailEntry) []MailEntry { return append(e, MailEntry{Raw: "evil: |/bin/sh"}) }),
+		mk(func(e []MailEntry) []MailEntry {
+			return append(e, MailEntry{Key: "x", Targets: []string{"thorin\nevil: |sh"}})
+		}),
+	} {
+		if _, err := h.SaveMailTable(ctx, "aliases", es, false); err == nil {
+			t.Errorf("Fall %d akzeptiert", i)
+		}
+	}
+	if after, _ := h.readFile("/etc/mail/aliases"); after != before {
+		t.Error("abgelehnte Eingaben haben die Datei verändert")
+	}
+	// virtuelle Tabelle: Adressformen
+	vt := byName["vusers"].Entries
+	vt = append(vt, MailEntry{Key: "sales@ctw.lan", Targets: []string{"mara"}})
+	if _, err := h.SaveMailTable(ctx, "vusers", vt, false); err != nil {
+		t.Fatal(err)
+	}
+	if g, _ := h.readFile("/etc/mail/virtual"); !strings.Contains(g, "sales@ctw.lan\tmara") || !strings.Contains(g, "# virtuelle Adressen") {
+		t.Errorf("virtual:\n%s", g)
+	}
+	if _, err := h.SaveMailTable(ctx, "vusers", append(vt, MailEntry{Key: "ohne-at", Targets: []string{"mara"}}), false); err == nil {
+		t.Error("virtuelle Adresse ohne @ akzeptiert")
 	}
 }

@@ -31,6 +31,8 @@ func (s *Server) confGet(w http.ResponseWriter, r *http.Request) {
 		v, err = s.Host.HTTPD(r.Context())
 	case "smtpd":
 		v, err = s.Host.SMTPD(r.Context())
+	case "mailtables":
+		v, err = s.Host.MailTables(r.Context())
 	default:
 		jsonErr(w, http.StatusNotFound, "Unbekannte Konfiguration")
 		return
@@ -96,6 +98,15 @@ func (s *Server) confPut(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		res, err = s.Host.SaveSMTPD(r.Context(), &req.Conf, req.Activate, preview)
+	case "mailtables":
+		var req struct {
+			Table   string           `json:"table"`
+			Entries []obsd.MailEntry `json:"entries"`
+		}
+		if !decode(w, r, &req) {
+			return
+		}
+		res, err = s.Host.SaveMailTable(r.Context(), req.Table, req.Entries, preview)
 	case "doas":
 		var c obsd.DoasConf
 		if !decode(w, r, &c) {

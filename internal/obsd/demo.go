@@ -185,6 +185,8 @@ func (d *DemoRunner) Run(ctx context.Context, stdin []byte, name string, args ..
 			return d.sanMount(args[0])
 		}
 		return ok(demoMount + d.sanMountLines())
+	case "smtpctl":
+		return ok("table update requested\n")
 	case "ntpctl":
 		return ok(demoNtpctl)
 	case "dmesg":

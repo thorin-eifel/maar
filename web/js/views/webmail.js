@@ -5,7 +5,7 @@ import { h, clear, pageHead, panel, pill, loading, toast, toastError, confirm, d
 import { get, put } from '../api.js';
 import { rows, sel, inp, chk } from './hostconf.js';
 
-const TABS = [['httpd', 'Webserver (httpd)'], ['smtpd', 'Mail (smtpd)']];
+const TABS = [['httpd', 'Webserver (httpd)'], ['smtpd', 'Mail (smtpd)'], ['mail', 'Mail-Adressen']];
 const clone = x => JSON.parse(JSON.stringify(x));
 
 export default {
@@ -46,8 +46,8 @@ export default {
     async function load() {
       clear(body, loading());
       try {
-        const v = await get(`/api/conf/${tab}`);
-        await (tab === 'httpd' ? drawHTTPD : drawSMTPD)(v);
+        const v = await get(`/api/conf/${tab === 'mail' ? 'mailtables' : tab}`);
+        await ({ httpd: drawHTTPD, smtpd: drawSMTPD, mail: drawMail })[tab](v);
         if (pending) {
           body.prepend(h('div', { class: 'content-stack' }, pending.applied ? h('div', { class: 'note ok', role: 'status' }, pending.applied) : null,
             pending.warns.length ? h('div', { class: 'note warn', role: 'status' }, h('strong', null, 'Bitte beachten: '), pending.warns.map(w => h('div', null, w))) : null));
@@ -166,6 +166,40 @@ export default {
         panel('Annahme', 'LISTEN ON', h('div', { class: 'panel-body' }, listens)), panel('Zustellung', 'ACTION', h('div', { class: 'panel-body' }, actions_)),
         panel('Regeln', 'MATCH – ERSTE TREFFER GEWINNT', h('div', { class: 'panel-body' }, matches)),
         actions('smtpd', () => ({ conf: { tables: c.tables, pkis: c.pkis, listens: c.listens, actions: c.actions, matches: c.matches }, activate: st.on }), activateBox(v, st)));
+    }
+
+
+    // ---- Mail-Adressen (Aliase, virtuelle Benutzer) ----
+    function drawMail(v) {
+      const panels = v.tables.map(t => {
+        const items = clone(t.entries);
+        const q = h('input', { type: 'search', placeholder: 'Filtern …', 'aria-label': 'Filtern' });
+        const box = h('div');
+        const draw = () => {
+          const f = q.value.trim().toLowerCase();
+          clear(box, h('div', { class: 'table-wrap' }, h('table', { class: 'table' },
+            h('thead', null, h('tr', null, h('th', { scope: 'col' }, t.kind === 'aliases' ? 'Alias' : 'Adresse'), h('th', { scope: 'col' }, 'Ziele (Benutzer oder Mail-Adressen, durch Komma getrennt)'), h('th'))),
+            h('tbody', null, items.map((e, i) => {
+              if (f && !(`${e.key} ${(e.targets || []).join(' ')} ${e.raw || ''}`).toLowerCase().includes(f)) return null;
+              if (e.raw) return h('tr', null, h('td', { colSpan: 2 }, h('code', { class: 'mono' }, e.raw), h('span', { class: 'sub' }, 'Enthält Befehl, Datei oder Include – bleibt unverändert.')), h('td', { class: 'actions' }, h('button', { class: 'mini-btn danger', type: 'button', onclick: () => { items.splice(i, 1); draw(); } }, 'Entfernen')));
+              const tg = inp((e.targets || []).join(', '), x => { e.targets = x.split(',').map(s => s.trim()).filter(Boolean); }, { class: 'mono', 'aria-label': 'Ziele', list: 'mail-users' });
+              const add = sel([['', '+ Benutzer'], ...v.users.map(u => [u, u])], '', x => { if (x) { e.targets = [...(e.targets || []), x]; tg.value = e.targets.join(', '); add.value = ''; } });
+              return h('tr', null, h('td', null, inp(e.key, x => { e.key = x.trim(); }, { class: 'mono', 'aria-label': 'Name', placeholder: t.kind === 'aliases' ? 'abuse' : 'info@example.org' })),
+                h('td', null, h('div', { class: 'cf-fields' }, tg, add)), h('td', { class: 'actions' }, h('button', { class: 'mini-btn danger', type: 'button', onclick: () => { items.splice(i, 1); draw(); } }, 'Entfernen')));
+            }).filter(Boolean)))), h('datalist', { id: 'mail-users' }, v.users.map(u => h('option', { value: u }))));
+        };
+        q.addEventListener('input', draw);
+        draw();
+        const add = h('button', { class: 'mini-btn', type: 'button', onclick: () => { q.value = ''; items.push({ id: 0, key: '', targets: [] }); draw(); } }, t.kind === 'aliases' ? 'Alias hinzufügen' : 'Adresse hinzufügen');
+        return panel(t.kind === 'aliases' ? `Aliase <${t.name}>` : `Virtuelle Adressen <${t.name}>`, t.file.toUpperCase(), h('div', { class: 'panel-body' }, h('div', { class: 'toolbar' }, q, add), box,
+          h('p', { class: 'hint' }, t.kind === 'aliases' ? 'Mail an den Alias geht an alle Ziele. „root“ darf nicht fehlen; Schleifen und unbekannte Ziele lehnt maar ab.' : 'Eine Adresse wie info@example.org oder @example.org (alle übrigen Adressen der Domain) leitet an die Ziele.'),
+          actions('mailtables', () => ({ table: t.name, entries: items.map(e => ({ id: e.id, key: e.key, targets: e.targets || [], raw: e.raw })) }))));
+      });
+      clear(body, status(v),
+        v.tables.length ? null : h('div', { class: 'note warn' }, 'smtpd verwendet keine Alias- oder Virtual-Tabelle aus einer Datei. Lege unter „Mail (smtpd)“ eine Tabelle an und verknüpfe sie in einer Zustellung mit „alias“ oder „virtual“.'),
+        v.missing.length ? h('div', { class: 'note warn' }, `Die Datei ${v.missing.join(', ')} fehlt noch.`) : null,
+        v.hidden.length ? h('div', { class: 'note' }, `Absichtlich nicht angezeigt (Anmeldedaten mit Passwort-Hashes): ${v.hidden.map(n => `<${n}>`).join(' ')}`) : null,
+        ...panels);
     }
 
     drawTabs();
