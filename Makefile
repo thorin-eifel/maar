@@ -1,6 +1,6 @@
 # maar – Web-Verwaltung für OpenBSD im CTW Design System 2027
 
-VERSION ?= 1.0.0
+VERSION ?= 1.0.1
 LDFLAGS := -s -w -X main.version=$(VERSION)
 BIN     := build
 

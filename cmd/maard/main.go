@@ -33,7 +33,7 @@ import (
 	"github.com/thorin-eifel/maar/web"
 )
 
-var version = "1.0.0"
+var version = "1.0.1"
 
 func main() {
 	listen := flag.String("listen", ":9443", "Adresse und Port")
