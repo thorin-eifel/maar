@@ -379,3 +379,6 @@ a.tab{display:inline-flex;align-items:center}
 .side-nav .tree-link:hover{background:var(--brand-teal-200)}
 .side-nav .tree-link[aria-current="page"] .tree-icon{color:var(--brand-teal-500)}
 .side-nav .inv-tree{margin-left:-6px}
+
+.title-icon{width:.95em;height:.95em;margin-right:.45em;vertical-align:-.1em;color:var(--muted);stroke-width:1.8}
+.empty-icon{display:block;width:28px;height:28px;margin:0 auto 10px;opacity:.55}

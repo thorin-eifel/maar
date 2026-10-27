@@ -91,6 +91,7 @@ const P = {
   send: '<path d="M21 3L10 14M21 3l-7 18-4-7-7-4z"/>',
   flag: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
   tag: '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1"/>',
+  inbox: '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.7 4H7.3a2 2 0 0 0-1.8 1.1z"/>',
 };
 
 const cache = new Map();

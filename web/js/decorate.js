@@ -38,6 +38,14 @@ const RULES = [
   [/^(Anmelden)$/, 'key'],
 ];
 
+// Leerzustände bekommen ein Symbol über dem Text.
+const EMPTY_ICONS = [[/Suche|Suchbegriff|Treffer/i, 'search'], [/Token/i, 'key'], [/Ereignis|Meldung/i, 'bell'], [/Tabelle|State|Regel/i, 'firewall'], [/Image|Datei|Datenträger/i, 'disk'], [/VM|Maschine/i, 'vm'], [/Snapshot/i, 'camera'], [/Sicherung|Backup/i, 'backup'], [/Datastore/i, 'database'], [/Paket/i, 'package'], [/Link|Datei wählen|wählen/i, 'pencil']];
+
+function decorateEmpty(el) {
+  if (el.dataset.noicon !== undefined || el.querySelector(':scope > svg.icon') || !el.textContent.trim()) return;
+  el.prepend(icon(EMPTY_ICONS.find(([re]) => re.test(el.textContent))?.[1] || 'inbox', { cls: 'empty-icon' }));
+}
+
 const SKIP = 'button.mini-btn, button.cta, button.secondary, button.glass-button, a.mini-btn, a.cta, a.secondary';
 
 function decorate(el) {
@@ -55,7 +63,7 @@ function decorate(el) {
 
 export function startDecorating(root = document.getElementById('app')) {
   let queued = false;
-  const run = () => { queued = false; root.querySelectorAll(SKIP).forEach(decorate); document.querySelectorAll('dialog').forEach(d => d.querySelectorAll(SKIP).forEach(decorate)); };
+  const run = () => { queued = false; root.querySelectorAll(SKIP).forEach(decorate); root.querySelectorAll('.empty:not([role=status]):not(li)').forEach(decorateEmpty); document.querySelectorAll('dialog').forEach(d => d.querySelectorAll(SKIP).forEach(decorate)); };
   const schedule = () => { if (!queued) { queued = true; requestAnimationFrame(run); } };
   new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true });
   schedule();
