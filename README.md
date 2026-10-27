@@ -9,6 +9,8 @@ Auf dem Host wird außer dem Basissystem nichts benötigt.
 
 ## Funktionen
 
+Das Menü folgt der Logik des vSphere Clients: **Inventar** (Hosts, VMs, Templates, Konsolen), **Speicher** (geteilter Speicher, lokale Datenträger, Backup), **Netzwerk** (VM-Netze/Portgruppen, Adapter & Routen, Paketfilter), **Überwachung** (Leistung & Alarme, Ereignisse, Prozesse, Protokolle), **Host-Konfiguration** (Dienste, Pakete & Updates, Benutzer, System, Konfigurationsdateien) und **Verwaltung** (Zugriffssteuerung). Snapshots liegen wie in vSphere an der einzelnen VM.
+
 | Bereich | Was geht | Werkzeuge darunter |
 |---|---|---|
 | Übersicht | CPU, Speicher, Laufzeit, Dateisysteme, VMs, ausgefallene Dienste, pf-Status | `sysctl`, `top -b`, `df`, `ifconfig` |
@@ -27,7 +29,8 @@ Auf dem Host wird außer dem Basissystem nichts benötigt.
 | Netzwerk | Schnittstellen mit Adressen, veb-Mitgliedern und Status, up/down, netstart, hostname.if aus Vorlagen (DHCP, statisch, veb, vport, VLAN, WireGuard), Routen, Resolver | `ifconfig`, `netstat -rn`, `/etc/netstart` |
 | Paketfilter | Status, Regeln, Tabellen (Adressen hinzufügen/entfernen), States, Regelsatz laden, pf an/aus | `pfctl` |
 | Konfiguration | 24 freigegebene Dateien + alle `/etc/hostname.*`; Syntaxprüfung vor dem Speichern, Sicherung, Konflikterkennung, „Übernehmen“-Aktion | `pfctl -nf`, `vmd -n`, `httpd -n`, `doas -C`, `sshd -t`, … |
-| Ereignisse & Rollen | Ereignisprotokoll (Anmeldungen, Aktionen, Ablehnungen; filterbar, die letzten 2000 bleiben erhalten); Rollen Administrator, Operator, Betrachter mit Eingrenzung auf bestimmte VMs | `/var/maar/access.json`, `/var/maar/events.jsonl` |
+| Ereignisse | Ereignisprotokoll (Anmeldungen, Aktionen, Aufträge, Ablehnungen; filterbar, die letzten 2000 bleiben erhalten) | `/var/maar/events.jsonl` |
+| Zugriffssteuerung | Rollen Administrator, Operator, Betrachter mit Eingrenzung auf bestimmte VMs | `/var/maar/access.json`, `/var/maar/tokens.json` |
 | Hosts | mehrere maard-Instanzen in einer Übersicht: Status, CPU, Speicher, VMs, Meldungen, Ereignisse aller Hosts; Detailseite mit Verlauf; „Öffnen“ führt zur lokalen Oberfläche des Hosts | API-Token (nur lesen), Zertifikat-Fingerabdruck |
 | Geteilter Speicher | iSCSI-Ziele (anlegen, ändern, aktivieren, löschen, Sitzungsstatus), Fibre-Channel-HBAs mit WWPN, alle SAN-Disks mit Transport, Hersteller, WWN und Verwendung; Datastores (FFS) unter `/var/vmd/<name>`: anlegen, ein-/aushängen, entfernen; Disk-Images direkt in einem Datastore anlegen; NVMe-oF als ausdrücklicher Hinweis | `iscsid`, `iscsictl`, `dmesg`, `fdisk`, `disklabel`, `newfs`, `mount`, `/etc/iscsi.conf`, `/etc/fstab` |
 | Protokolle | `/var/log/*` lesen, filtern, live verfolgen | Server-Sent Events |
@@ -140,7 +143,7 @@ Ist ein Konto auf VMs eingegrenzt, sieht es nur diese in der VM-Liste und kann n
 
 Jeder Host betreibt sein eigenes `maard` und wird lokal verwaltet. Ein beliebiger maard dient als Zentrale und fragt die anderen (Peers) lesend ab:
 
-1. Auf dem Peer unter „Ereignisse & Rollen → API-Token“ ein Token anlegen (wird nur einmal angezeigt; gespeichert wird nur der SHA-256-Wert).
+1. Auf dem Peer unter „Verwaltung → Zugriffssteuerung → API-Token“ ein Token anlegen (wird nur einmal angezeigt; gespeichert wird nur der SHA-256-Wert).
 2. In der Zentrale unter „Hosts → Host verbinden“ Adresse, Name und Token eintragen und den **Fingerabdruck** des Zertifikats holen. Vergleiche ihn mit dem Zertifikat des Peers und bestätige ihn; ändert sich das Zertifikat später, meldet die Zentrale „Zertifikat geändert“, statt blind zu vertrauen.
 
 Token dürfen nur `GET /api/federation/summary` und die Messwerte lesen (alles andere: 403) und zählen bei Fehlversuchen in die Anmeldesperre. Peers werden nur über https angesprochen (http nur auf Loopback), ohne Zugangsdaten in der URL. Die Zentrale speichert die Peer-Token in `/var/maar/peers.json` (0600) und zeigt sie nie wieder an. Abfragen laufen parallel mit 6 s Zeitlimit und 10 s Zwischenspeicher; ein ausgefallener Peer stört die übrigen nicht. Verwaltungsaktionen (VMs starten, Rollen, Konfiguration) gibt es über die Zentrale bewusst nicht – dafür ist jeder Host selbst zuständig.

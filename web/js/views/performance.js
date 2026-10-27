@@ -18,7 +18,7 @@ export default {
   title: 'Leistung',
   async render(main) {
     const body = h('div', { class: 'content' });
-    main.append(pageHead('02 / ÜBERBLICK', 'Leistung & Alarme', 'Verlauf von CPU, Speicher und Netz für Host und VMs – zwei Stunden in 10-Sekunden-Schritten, sieben Tage als 5-Minuten-Mittel. Alarme per Mail über den lokalen smtpd.'), body);
+    main.append(pageHead('12 / ÜBERWACHUNG', 'Leistung & Alarme', 'Verlauf von CPU, Speicher und Netz für Host und VMs – zwei Stunden in 10-Sekunden-Schritten, sieben Tage als 5-Minuten-Mittel. Alarme per Mail über den lokalen smtpd.'), body);
 
     let range = '1h', object = 'host', charts = [], timer = null, alertData = null;
     const objSel = h('select', { class: 'input', 'aria-label': 'Objekt' }, h('option', { value: 'host' }, 'Host'));

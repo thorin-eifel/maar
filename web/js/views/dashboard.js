@@ -6,7 +6,7 @@ export default {
   async render(main) {
     const body = h('div', { class: 'content' }, loading());
     const refreshBtn = h('button', { class: 'secondary', type: 'button' }, 'Aktualisieren');
-    main.append(pageHead('01 / ÜBERBLICK', session.hostname, 'Zustand des Hosts, der virtuellen Maschinen und der wichtigsten Dienste auf einen Blick.', refreshBtn), body);
+    main.append(pageHead('01 / ÜBERSICHT', session.hostname, 'Zustand des Hosts, der virtuellen Maschinen und der wichtigsten Dienste auf einen Blick.', refreshBtn), body);
 
     async function load() {
       const d = await get('/api/overview');

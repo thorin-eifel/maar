@@ -6,7 +6,7 @@ export default {
   title: 'Pakete & Updates',
   async render(main) {
     const body = h('div', { class: 'content' }, loading());
-    main.append(pageHead('08 / SYSTEM', 'Pakete & Updates', 'Pakete mit pkg_add(1) installieren und aktualisieren, Systempatches mit syspatch(8), Firmware mit fw_update(8) und Upgrades mit sysupgrade(8).'), body);
+    main.append(pageHead('17 / HOST-KONFIGURATION', 'Pakete & Updates', 'Pakete mit pkg_add(1) installieren und aktualisieren, Systempatches mit syspatch(8), Firmware mit fw_update(8) und Upgrades mit sysupgrade(8).'), body);
 
     let pkgs = [], showAll = false, filterTerm = '';
     const instBox = h('div', { class: 'panel-body flush' });

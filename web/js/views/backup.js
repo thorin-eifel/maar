@@ -42,7 +42,7 @@ export default {
   async render(main) {
     const body = h('div', { class: 'content' }, loading());
     const newJob = h('button', { class: 'cta', type: 'button' }, 'Job anlegen');
-    main.append(pageHead('05 / VIRTUALISIERUNG', 'Backup', 'Zeitgesteuerte Sicherung der VMs auf lokale Platten, NFS oder SFTP – mit Aufbewahrung und Wiederherstellung per Klick. Sicherungen sind eigenständige qcow2-Images.', newJob), body);
+    main.append(pageHead('08 / SPEICHER', 'Backup', 'Zeitgesteuerte Sicherung der VMs auf lokale Platten, NFS oder SFTP – mit Aufbewahrung und Wiederherstellung per Klick. Sicherungen sind eigenständige qcow2-Images.', newJob), body);
     let d = null, vmNames = [], restoreTarget = null;
     const restoreBox = h('div', { class: 'panel-body flush' });
 

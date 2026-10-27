@@ -2,10 +2,10 @@ import { h, clear, pageHead, panel, table, bytes, loading, toastError, dialog } 
 import { get } from '../api.js';
 
 export default {
-  title: 'Speicher',
+  title: 'Lokale Datenträger',
   async render(main) {
     const body = h('div', { class: 'content' }, loading());
-    main.append(pageHead('11 / SYSTEM', 'Speicher', 'Eingehängte Dateisysteme (df, mount) und Datenträger mit ihren Disklabels.'), body);
+    main.append(pageHead('07 / SPEICHER', 'Lokale Datenträger', 'Eingehängte Dateisysteme (df, mount) und Datenträger mit ihren Disklabels.'), body);
     const st = await get('/api/storage');
 
     const showLabel = async d => {

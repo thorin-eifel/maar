@@ -2,10 +2,10 @@ import { h, clear, pageHead, panel, loading, toast, toastError, confirm, busy, d
 import { get, put, post, q } from '../api.js';
 
 export default {
-  title: 'Konfiguration',
+  title: 'Konfigurationsdateien',
   async render(main, _parts, query) {
     const body = h('div', { class: 'content' }, loading());
-    main.append(pageHead('16 / WERKZEUGE', 'Konfiguration', 'Freigegebene Systemdateien bearbeiten. Jede Änderung wird vorher mit dem passenden Prüfprogramm validiert und die alte Fassung gesichert.'), body);
+    main.append(pageHead('20 / HOST-KONFIGURATION', 'Konfigurationsdateien', 'Freigegebene Systemdateien bearbeiten. Jede Änderung wird vorher mit dem passenden Prüfprogramm validiert und die alte Fassung gesichert.'), body);
 
     let files = await get('/api/files');
     let cur = null, dirty = false;

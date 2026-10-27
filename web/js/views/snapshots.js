@@ -8,7 +8,7 @@ export default {
     const body = h('div', { class: 'content' }, loading());
     const newBtn = h('button', { class: 'cta', type: 'button' }, 'Snapshot anlegen');
     const back = h('a', { class: 'secondary', href: '#/vms' }, 'Zu den VMs');
-    main.append(pageHead('03 / VIRTUALISIERUNG', `Snapshots · ${vm}`, 'Offline-Snapshots als qcow2-Kette. Zurücksetzen verzweigt den Baum; Zusammenführen hängt Nachfolger auf den Vorgänger um.', back, newBtn), body);
+    main.append(pageHead('03 / INVENTAR', `Snapshots · ${vm}`, 'Offline-Snapshots als qcow2-Kette. Zurücksetzen verzweigt den Baum; Zusammenführen hängt Nachfolger auf den Vorgänger um.', back, newBtn), body);
     let t = null;
     const base = `/api/vms/${encodeURIComponent(vm)}/snapshots`;
 

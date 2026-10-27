@@ -123,7 +123,7 @@ export default {
     }
     this.title = 'Konsolen';
     const body = h('div', { class: 'content' }, loading());
-    main.append(pageHead('06 / VIRTUALISIERUNG', 'Konsolen', 'Serielle Konsolen der laufenden VMs (wie vmctl console) und eine Login-Shell auf dem Host – direkt im Browser.',
+    main.append(pageHead('05 / INVENTAR', 'Konsolen', 'Serielle Konsolen der laufenden VMs (wie vmctl console) und eine Login-Shell auf dem Host – direkt im Browser.',
       h('a', { class: 'cta', href: '#/console/shell' }, 'Host-Shell öffnen')), body);
     const d = await get('/api/vms');
     const rows = d.overview.vms.map(v => h('tr', null,

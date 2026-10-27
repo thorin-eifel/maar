@@ -4,11 +4,13 @@ import { session, get, post, setUnauthorizedHandler } from './api.js';
 import { initJobs, toggleJobs } from './jobs.js';
 
 const NAV = [
-  ['Überblick', [['01', 'Übersicht', '#/', 'dashboard'], ['02', 'Leistung & Alarme', '#/performance', 'performance']]],
-  ['Virtualisierung', [['03', 'Virtuelle Maschinen', '#/vms', 'vms'], ['04', 'Templates', '#/templates', 'templates'], ['05', 'Backup', '#/backup', 'backup'], ['06', 'Konsolen', '#/console', 'console']]],
-  ['System', [['07', 'Dienste', '#/services', 'services'], ['08', 'Pakete & Updates', '#/packages', 'packages'], ['09', 'Benutzer', '#/users', 'users'], ['10', 'Prozesse', '#/processes', 'processes'], ['11', 'Speicher', '#/storage', 'storage'], ['12', 'System', '#/system', 'system']]],
-  ['Netz', [['13', 'VM-Netze', '#/vnet', 'vnet'], ['14', 'Netzwerk', '#/network', 'network'], ['15', 'Paketfilter', '#/firewall', 'firewall']]],
-  ['Werkzeuge', [['16', 'Konfiguration', '#/files', 'files'], ['17', 'Protokolle', '#/logs', 'logs'], ['18', 'Ereignisse & Rollen', '#/access', 'access'], ['19', 'Hosts', '#/hosts', 'hosts'], ['20', 'Geteilter Speicher', '#/san', 'san']]],
+  ['Übersicht', [['01', 'Übersicht', '#/', 'dashboard']]],
+  ['Inventar', [['02', 'Hosts', '#/hosts', 'hosts'], ['03', 'Virtuelle Maschinen', '#/vms', 'vms'], ['04', 'Templates', '#/templates', 'templates'], ['05', 'Konsolen', '#/console', 'console']]],
+  ['Speicher', [['06', 'Geteilter Speicher', '#/san', 'san'], ['07', 'Lokale Datenträger', '#/storage', 'storage'], ['08', 'Backup', '#/backup', 'backup']]],
+  ['Netzwerk', [['09', 'VM-Netze', '#/vnet', 'vnet'], ['10', 'Adapter & Routen', '#/network', 'network'], ['11', 'Paketfilter', '#/firewall', 'firewall']]],
+  ['Überwachung', [['12', 'Leistung & Alarme', '#/performance', 'performance'], ['13', 'Ereignisse', '#/events', 'events'], ['14', 'Prozesse', '#/processes', 'processes'], ['15', 'Protokolle', '#/logs', 'logs']]],
+  ['Host-Konfiguration', [['16', 'Dienste', '#/services', 'services'], ['17', 'Pakete & Updates', '#/packages', 'packages'], ['18', 'Benutzer & Gruppen', '#/users', 'users'], ['19', 'System', '#/system', 'system'], ['20', 'Konfigurationsdateien', '#/files', 'files']]],
+  ['Verwaltung', [['21', 'Zugriffssteuerung', '#/access', 'access']]],
 ];
 
 const app = document.getElementById('app');
@@ -52,7 +54,7 @@ function shell() {
   const nav = h('nav', { class: 'side-nav-wrap', 'aria-label': 'Hauptnavigation' },
     NAV.map(([label, items]) => [
       h('p', { class: 'nav-label' }, label),
-      h('div', { class: 'side-nav' }, items.filter(([, , , key]) => session.role === 'admin' || key !== 'files').map(([n, t, href, key]) => h('a', { href, 'data-key': key }, h('span', null, n), t))),
+      h('div', { class: 'side-nav' }, items.filter(([, , , key]) => session.role === 'admin' || (key !== 'files' && key !== 'access')).map(([n, t, href, key]) => h('a', { href, 'data-key': key }, h('span', null, n), t))),
     ]));
   const logout = h('button', { class: 'mini-btn', type: 'button' }, 'Abmelden');
   logout.addEventListener('click', async () => {
@@ -99,6 +101,7 @@ const routes = {
   files: () => import('./views/files.js'),
   logs: () => import('./views/logs.js'),
   access: () => import('./views/access.js'),
+  events: () => import('./views/events.js'),
   hosts: () => import('./views/hosts.js'),
   san: () => import('./views/san.js'),
 };

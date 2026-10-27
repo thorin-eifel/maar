@@ -57,7 +57,7 @@ export default {
   async render(main) {
     const body = h('div', { class: 'content' }, loading());
     const addBtn = h('button', { class: 'cta', type: 'button' }, 'iSCSI-Ziel anlegen');
-    main.append(pageHead('20 / WERKZEUGE', 'Geteilter Speicher', 'Externer Speicher per iSCSI und Fibre Channel, Datastores für VM-Disks. NVMe-oF kennt OpenBSD noch nicht.', addBtn), body);
+    main.append(pageHead('06 / SPEICHER', 'Geteilter Speicher', 'Externer Speicher per iSCSI und Fibre Channel, Datastores für VM-Disks. NVMe-oF kennt OpenBSD noch nicht.', addBtn), body);
     let data = null;
 
     const act = (btn, fn) => btn.addEventListener('click', () => busy(btn, fn).catch(toastError));

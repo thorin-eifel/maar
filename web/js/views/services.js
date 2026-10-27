@@ -6,7 +6,7 @@ export default {
   async render(main) {
     const body = h('div', { class: 'content' }, loading());
     const refreshBtn = h('button', { class: 'secondary', type: 'button' }, 'Aktualisieren');
-    main.append(pageHead('07 / SYSTEM', 'Dienste', 'rc.d(8)-Dienste über rcctl(8) starten, stoppen, beim Systemstart aktivieren und mit Flags versehen.', refreshBtn), body);
+    main.append(pageHead('16 / HOST-KONFIGURATION', 'Dienste', 'rc.d(8)-Dienste über rcctl(8) starten, stoppen, beim Systemstart aktivieren und mit Flags versehen.', refreshBtn), body);
 
     let list = [], filter = 'on', term = '';
     const search = h('input', { class: 'input', type: 'search', placeholder: 'Dienst suchen', 'aria-label': 'Dienst suchen' });

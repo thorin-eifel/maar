@@ -11,11 +11,11 @@ const TEMPLATES = {
 };
 
 export default {
-  title: 'Netzwerk',
+  title: 'Adapter & Routen',
   async render(main) {
     const body = h('div', { class: 'content' }, loading());
     const newBtn = h('button', { class: 'cta', type: 'button' }, 'Interface konfigurieren');
-    main.append(pageHead('14 / NETZ', 'Netzwerk', 'Schnittstellen (ifconfig), Routen und Resolver. Dauerhafte Konfiguration über hostname.if(5), angewendet mit netstart.', newBtn), body);
+    main.append(pageHead('10 / NETZWERK', 'Adapter & Routen', 'Schnittstellen (ifconfig), Routen und Resolver. Dauerhafte Konfiguration über hostname.if(5), angewendet mit netstart.', newBtn), body);
     let data = null;
 
     async function load() {

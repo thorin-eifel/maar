@@ -13,7 +13,7 @@ export default {
   async render(main) {
     const body = h('div', { class: 'content' }, loading());
     const importBtn = h('button', { class: 'cta', type: 'button' }, 'Template importieren');
-    main.append(pageHead('04 / VIRTUALISIERUNG', 'Templates', 'Goldene Images für neue VMs. Bereitstellung als verknüpfter Klon in Sekunden oder als Vollkopie, mit Gastanpassung beim ersten Start.', importBtn), body);
+    main.append(pageHead('04 / INVENTAR', 'Templates', 'Goldene Images für neue VMs. Bereitstellung als verknüpfter Klon in Sekunden oder als Vollkopie, mit Gastanpassung beim ersten Start.', importBtn), body);
     let data = null;
 
     async function load() {

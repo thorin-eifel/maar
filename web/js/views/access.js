@@ -9,7 +9,7 @@ const ROLE_HELP = {
   viewer: 'liest alles außer Konfigurationsdateien und Schlüsseln, ändert nichts',
 };
 
-function eventsPanel() {
+export function eventsPanel() {
   const rows = h('div', { class: 'panel-body flush' }, loading());
   const user = h('input', { placeholder: 'Benutzer', 'aria-label': 'Benutzer', size: 12 });
   const text = h('input', { type: 'search', placeholder: 'Suchen …', 'aria-label': 'Suchen' });
@@ -32,7 +32,7 @@ function eventsPanel() {
   return { el: panel('Ereignisse', 'ANMELDUNGEN · AKTIONEN · ABLEHNUNGEN', rows, h('div', { class: 'toolbar' }, user, kind, result, text)), reload: load };
 }
 
-async function rolesPanel(onSaved) {
+export async function rolesPanel(onSaved) {
   const d = await get('/api/access');
   let cfg = d.config;
   const box = h('div', { class: 'panel-body flush' });
@@ -80,7 +80,7 @@ async function rolesPanel(onSaved) {
   return panel('Rollen & VM-Zugriff', 'ADMIN · OPERATOR · BETRACHTER', box, add);
 }
 
-async function tokensPanel() {
+export async function tokensPanel() {
   const box = h('div', { class: 'panel-body flush' });
   async function load() {
     const list = await get('/api/tokens');
@@ -107,14 +107,14 @@ async function tokensPanel() {
 }
 
 export default {
-  title: 'Ereignisse & Rollen',
+  title: 'Zugriffssteuerung',
   async render(main) {
     const body = h('div', { class: 'content' });
-    main.append(pageHead('18 / WERKZEUGE', 'Ereignisse & Rollen', `Wer hat wann was getan, und wer darf was. Du bist angemeldet als ${session.user} (${ROLE[session.role] || session.role}).`), body);
-    const ev = eventsPanel();
-    clear(body, ev.el);
-    if (session.role === 'admin') body.append(await rolesPanel(() => ev.reload().catch(() => {})), await tokensPanel());
-    const t = setInterval(() => ev.reload().catch(() => {}), 20000);
-    return () => clearInterval(t);
+    main.append(pageHead('21 / VERWALTUNG', 'Zugriffssteuerung', `Rollen und VM-Zugriff je Konto sowie API-Token für die Anbindung weiterer Hosts. Du bist angemeldet als ${session.user} (${ROLE[session.role] || session.role}).`), body);
+    if (session.role !== 'admin') {
+      clear(body, h('div', { class: 'note' }, 'Die Verwaltung von Rollen und Token ist Administratoren vorbehalten. Dein Zugriff: ', ROLE[session.role] || session.role, session.vms?.length ? ` (nur VMs: ${session.vms.join(', ')})` : '', '.'));
+      return;
+    }
+    body.append(await rolesPanel(), await tokensPanel());
   },
 };

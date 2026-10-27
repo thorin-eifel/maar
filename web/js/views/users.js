@@ -4,11 +4,11 @@ import { get, post, put, del, session } from '../api.js';
 const SHELLS = ['/bin/ksh', '/bin/sh', '/bin/csh', '/usr/local/bin/bash', '/usr/local/bin/zsh', '/usr/local/bin/fish', '/sbin/nologin'];
 
 export default {
-  title: 'Benutzer',
+  title: 'Benutzer & Gruppen',
   async render(main) {
     const body = h('div', { class: 'content' }, loading());
     const newBtn = h('button', { class: 'cta', type: 'button' }, 'Benutzer anlegen');
-    main.append(pageHead('09 / SYSTEM', 'Benutzer & Gruppen', 'Konten mit useradd(8) und usermod(8) verwalten. Mitglieder der Gruppe wheel dürfen sich an dieser Oberfläche anmelden und doas nutzen.', newBtn), body);
+    main.append(pageHead('18 / HOST-KONFIGURATION', 'Benutzer & Gruppen', 'Konten mit useradd(8) und usermod(8) verwalten. Mitglieder der Gruppe wheel dürfen sich an dieser Oberfläche anmelden und doas nutzen.', newBtn), body);
 
     let data = null, showSystem = false;
     const userBox = h('div', { class: 'panel-body flush' });
