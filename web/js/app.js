@@ -18,10 +18,8 @@ const NAV = [
 ];
 
 const app = document.getElementById('app');
-let main = null, crumb = null, cleanup = null, inventory = null, pageEl = null, treeBtn = null;
+let main = null, crumb = null, cleanup = null, inventory = null, pageEl = null;
 // Seiten, neben denen der Inventarbaum steht (wie die Inventaransichten im vSphere Client).
-const TREE_KEYS = new Set(['hosts', 'vms', 'vm', 'templates', 'console', 'datastore', 'portgroup', 'san', 'vnet']);
-const treeShown = () => { try { return localStorage.getItem('maar.tree.hidden') !== '1'; } catch { return true; } };
 
 function setTheme(btn) {
   const root = document.documentElement;
@@ -73,12 +71,19 @@ function setGroup(head, list, open, persist = true) {
 }
 
 function shell() {
+  if (inventory) inventory.destroy();
+  inventory = createInventory();
   const collapsed = loadCollapsed();
   const nav = h('nav', { class: 'side-nav-wrap', 'aria-label': 'Hauptnavigation' },
     NAV.map(([label, gi, items], gix) => {
       const id = `nav-g${gix}`, open = !collapsed.has(label);
+      // Im Inventar ersetzt der Baum (Hosts → VMs, Templates, Datastores …) die flachen Links;
+      // diese bleiben nur für die schmale Ansicht und das Aufklappen der Gruppe.
+      const inv = label === 'Inventar';
       const list = h('div', { class: 'side-nav', id, hidden: !open },
-        items.filter(([, , key]) => session.role === 'admin' || (key !== 'files' && key !== 'access')).map(([t, href, key, ic]) => h('a', { href, 'data-key': key, 'aria-label': t }, icon(ic, { cls: 'nav-icon' }), h('span', { class: 'nav-text' }, t))));
+        inv ? inventory.el : null,
+        items.filter(([, , key]) => session.role === 'admin' || (key !== 'files' && key !== 'access')).map(([t, href, key, ic]) =>
+          h('a', { href, 'data-key': key, 'aria-label': t, class: inv && key !== 'console' ? 'nav-flat' : null }, icon(ic, { cls: 'nav-icon' }), h('span', { class: 'nav-text' }, t))));
       const head = h('button', { class: 'nav-label', type: 'button', 'aria-expanded': String(open), 'aria-controls': id, 'data-group': label },
         icon(gi, { cls: 'label-icon' }), h('span', { class: 'nav-label-text' }, label), icon('chevron-down', { cls: 'chev' }));
       head.addEventListener('click', () => setGroup(head, list, head.getAttribute('aria-expanded') !== 'true'));
@@ -95,10 +100,6 @@ function shell() {
   const jobsBtn = h('button', { class: 'mini-btn', type: 'button', id: 'jobs-btn', 'aria-expanded': 'false', onclick: () => toggleJobs() }, icon('tasks'), 'Aufgaben', badge);
   crumb = h('span', { class: 'meta' });
   main = h('main', { id: 'inhalt', tabindex: '-1' });
-  if (inventory) inventory.destroy();
-  inventory = createInventory();
-  treeBtn = h('button', { class: 'mini-btn', type: 'button', id: 'tree-btn', 'aria-pressed': String(treeShown()), hidden: true }, icon('tree'), 'Inventar');
-  treeBtn.addEventListener('click', () => { const on = !treeShown(); try { localStorage.setItem('maar.tree.hidden', on ? '0' : '1'); } catch { /* privat */ } applyTree(); });
   clear(app, h('div', { class: 'layout' },
     h('aside', { class: 'sidebar', 'aria-label': 'Navigation' },
       h('a', { href: '#/', 'aria-label': 'Zur Übersicht' }, h('img', { class: 'logo', src: '/img/ctw-logo.png', alt: 'CTW' })),
@@ -109,7 +110,7 @@ function shell() {
         h('div', null, logout),
         h('div', { class: 'mono' }, `maar ${session.version}`))),
     pageEl = h('div', { class: 'page' },
-      h('div', { class: 'topline' }, crumb, h('div', { class: 'top-actions' }, treeBtn, jobsBtn, themeToggle(), glassToggle())),
+      h('div', { class: 'topline' }, crumb, h('div', { class: 'top-actions' }, jobsBtn, themeToggle(), glassToggle())),
       main)));
   initJobs(badge);
 }
@@ -121,21 +122,10 @@ function headIcon(key) {
   if (item && idx && !idx.querySelector('svg')) idx.prepend(icon(item[3], { cls: 'head-icon' }));
 }
 
+// Der Inventarbaum sitzt im Menü; hier nur Auswahl und Zustand aktualisieren.
 function applyTree() {
-  const key = routeKey;
-  const on = TREE_KEYS.has(key);
-  treeBtn.hidden = !on;
-  const show = on && treeShown();
-  treeBtn.setAttribute('aria-pressed', String(show));
-  pageEl.classList.toggle('has-tree', show);
-  if (show) {
-    if (inventory.el.parentElement !== pageEl) pageEl.insertBefore(inventory.el, main);
-    inventory.start();
-    inventory.redraw();
-  } else {
-    inventory.el.remove();
-    inventory.stop();
-  }
+  inventory.start();
+  inventory.redraw();
 }
 
 const routes = {
@@ -179,7 +169,7 @@ async function route() {
   const seq = ++routeSeq;
   const navKey = { vm: 'vms', datastore: 'san', portgroup: 'vnet', iface: 'network' }[key] || key;
   if (cleanup) { try { cleanup(); } catch { /* egal */ } cleanup = null; }
-  for (const a of app.querySelectorAll('.side-nav a')) {
+  for (const a of app.querySelectorAll('.side-nav a[data-key]')) {
     if ((a.dataset.key === 'dashboard' && key === '') || a.dataset.key === navKey) {
       a.setAttribute('aria-current', 'page');
       const list = a.closest('.side-nav'), head = list?.previousElementSibling;
