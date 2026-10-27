@@ -171,8 +171,8 @@ async function route() {
   if (cleanup) { try { cleanup(); } catch { /* egal */ } cleanup = null; }
   for (const a of app.querySelectorAll('.side-nav a[data-key]')) {
     if ((a.dataset.key === 'dashboard' && key === '') || a.dataset.key === navKey) {
-      // Datastore/Portgruppe markiert der Baum selbst; der Menüpunkt bleibt dann unmarkiert.
-      if (key !== 'datastore' && key !== 'portgroup') a.setAttribute('aria-current', 'page');
+      // Datastore, Portgruppe und VM-Konsole markiert der Baum selbst; der Menüpunkt bleibt dann unmarkiert.
+      if (key !== 'datastore' && key !== 'portgroup' && !(key === 'console' && parts[1] === 'vm')) a.setAttribute('aria-current', 'page');
       const list = a.closest('.side-nav'), head = list?.previousElementSibling;
       if (list?.hidden && head) setGroup(head, list, true, false);
     }

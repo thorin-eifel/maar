@@ -44,7 +44,9 @@ export function createInventory() {
       const s = x.summary, id = x.id, kids = [];
       if (s) {
         kids.push({ id: `vms:${id}`, icon: 'vm', label: 'Virtuelle Maschinen', count: s.vms.length, href: x.local ? '#/vms' : `#/hosts/${enc(id)}`, folder: true,
-          children: s.vms.map(v => ({ id: `vm:${id}:${v.name}`, icon: 'vm', label: v.name, state: v.state, href: x.local ? `#/vm/${enc(v.name)}` : `#/hosts/${enc(id)}`, leaf: true })) });
+          children: s.vms.map(v => ({ id: `vm:${id}:${v.name}`, icon: 'vm', label: v.name, state: v.state, href: x.local ? `#/vm/${enc(v.name)}` : `#/hosts/${enc(id)}`, leaf: true,
+            // Die Konsole hängt direkt unter ihrer VM (nur wenn sie läuft und lokal erreichbar ist).
+            children: x.local && v.state === 'running' ? [{ id: `con:${id}:${v.name}`, icon: 'terminal', label: 'Konsole', href: `#/console/vm/${enc(v.name)}`, leaf: true }] : [] })) });
         if (x.local && s.templates?.length) kids.push({ id: 'tpl', icon: 'template', label: 'Templates', count: s.templates.length, href: '#/templates', folder: true, children: s.templates.map(t => ({ id: `tpl:${t}`, icon: 'template', label: t, href: '#/templates', leaf: true })) });
       }
       nodes.push({ id: `host:${id}`, icon: 'server', label: x.name || id, state: x.status === 'ok' ? 'running' : 'offline', host: true, hint: x.local ? 'dieser Host' : '', href: `#/hosts/${enc(id)}`, children: kids });
@@ -52,12 +54,16 @@ export function createInventory() {
     return [{ id: 'hosts', icon: 'datacenter', label: 'Hosts', count: hosts.length, href: '#/hosts', folder: true, children: nodes }];
   }
 
+  // VM-Knoten sind standardmäßig offen; gemerkt wird nur, was der Nutzer zugeklappt hat.
+  const isOpen = n => n.id.startsWith('vm:') ? !open.has('closed:' + n.id) : open.has(n.id);
+
   const matches = n => n.label.toLowerCase().includes(filter);
   const subtree = n => matches(n) || (n.children || []).some(subtree);
 
   function currentId() {
     const [path, a, b] = location.hash.replace(/^#\/?/, '').split('?')[0].split('/').map(decodeURIComponent);
     if (path === 'vm') return `vm:local:${a}`;
+    if (path === 'console' && a === 'vm') return `con:local:${b}`;
     if (path === 'hosts') return a ? `host:${a}` : 'hosts';
     if (path === 'vms') return 'vms:local';
     if (path === 'templates') return 'tpl';
@@ -70,14 +76,14 @@ export function createInventory() {
 
   function row(n, depth, cur) {
     const kids = n.children && n.children.length ? n.children : null;
-    const expanded = filter ? true : open.has(n.id);
+    const expanded = filter ? true : isOpen(n);
     const li = h('li', { role: 'treeitem', 'aria-expanded': kids ? String(expanded) : null, 'aria-level': String(depth), 'aria-selected': String(n.id === cur) });
     const link = h('a', { href: n.href, class: 'tree-link', tabindex: '-1', 'aria-current': n.id === cur ? 'page' : null, style: { paddingLeft: `${8 + (depth - 1) * 16 + (kids ? 0 : 18)}px` } },
       n.icon ? icon(n.icon, { cls: 'tree-icon' + (n.state ? ' st-' + n.state : '') }) : null, n.state ? dot(n.state) : null, h('span', { class: 'tree-label' }, n.label), n.count !== undefined ? h('span', { class: 'tree-count' }, n.count) : null, n.hint ? h('span', { class: 'tree-hint' }, n.hint) : null);
     const line = h('div', { class: 'tree-row' });
     if (kids) {
       const tg = h('button', { class: 'tree-toggle', type: 'button', tabindex: '-1', 'aria-label': `${n.label} ${expanded ? 'einklappen' : 'ausklappen'}` }, icon(expanded ? 'chevron-down' : 'chevron-right', { cls: 'tree-chev' }));
-      tg.addEventListener('click', e => { e.preventDefault(); toggle(n.id); });
+      tg.addEventListener('click', e => { e.preventDefault(); toggle(n); });
       line.append(tg);
       link.style.paddingLeft = `${4 + (depth - 1) * 16}px`;
     }
@@ -87,13 +93,17 @@ export function createInventory() {
     return li;
   }
 
-  function toggle(id) { open.has(id) ? open.delete(id) : open.add(id); saveOpen(open); draw(); }
+  function toggle(n) {
+    const k = n.id.startsWith('vm:') ? 'closed:' + n.id : n.id;
+    open.has(k) ? open.delete(k) : open.add(k);
+    saveOpen(open); draw();
+  }
 
   // Den Zweig des aktuellen Objekts aufklappen, damit man es im Baum sieht.
   function reveal(cur) {
-    const parent = cur.startsWith('ds:') ? 'ds' : cur.startsWith('pg:') ? 'pg' : cur.startsWith('tpl:') ? 'tpl' : cur.startsWith('vm:') ? `vms:${cur.split(':')[1]}` : null;
-    const inv = cur.startsWith('vm:') || cur.startsWith('tpl');
-    const host = cur.startsWith('vm:') ? `host:${cur.split(':')[1]}` : (cur.startsWith('tpl') ? 'host:local' : null);
+    const parent = cur.startsWith('ds:') ? 'ds' : cur.startsWith('pg:') ? 'pg' : cur.startsWith('tpl:') ? 'tpl' : /^(vm|con):/.test(cur) ? `vms:${cur.split(':')[1]}` : null;
+    const inv = /^(vm|con):/.test(cur) || cur.startsWith('tpl');
+    const host = /^(vm|con):/.test(cur) ? `host:${cur.split(':')[1]}` : (cur.startsWith('tpl') ? 'host:local' : null);
     let changed = false;
     for (const id of inv ? ['hosts', host, parent] : [parent]) if (id && !open.has(id)) { open.add(id); changed = true; }
     if (changed) saveOpen(open);
@@ -129,19 +139,19 @@ export function createInventory() {
     else if (e.key === 'Home') to = links[0];
     else if (e.key === 'End') to = links[links.length - 1];
     else if (e.key === 'ArrowRight' && li.hasAttribute('aria-expanded')) {
-      if (li.getAttribute('aria-expanded') === 'false') { toggle(treeId(kind, links[i])); return; }
+      if (li.getAttribute('aria-expanded') === 'false') { toggle(treeNode(kind, links[i])); return; }
       to = links[i + 1];
     } else if (e.key === 'ArrowLeft') {
-      if (li.getAttribute('aria-expanded') === 'true') { toggle(treeId(kind, links[i])); return; }
+      if (li.getAttribute('aria-expanded') === 'true') { toggle(treeNode(kind, links[i])); return; }
       to = li.parentElement.closest('li')?.querySelector('.tree-link');
     } else return;
     e.preventDefault();
     if (to) { links.forEach(a => a.setAttribute('tabindex', '-1')); to.setAttribute('tabindex', '0'); to.focus(); }
   });
   // Die Knoten-ID steckt nicht im DOM; über die Reihenfolge wieder auffindbar machen.
-  function treeId(kind, a) {
-    const flat = []; (function walk(ns) { for (const n of ns) { flat.push(n); if (n.children && (filter || open.has(n.id))) walk(n.children.filter(k => !filter || subtree(k))); } })(model(kind).filter(n => !filter || subtree(n)));
-    return flat[[...lists[kind].querySelectorAll('.tree-link')].indexOf(a)]?.id;
+  function treeNode(kind, a) {
+    const flat = []; (function walk(ns) { for (const n of ns) { flat.push(n); if (n.children && (filter || isOpen(n))) walk(n.children.filter(k => !filter || subtree(k))); } })(model(kind).filter(n => !filter || subtree(n)));
+    return flat[[...lists[kind].querySelectorAll('.tree-link')].indexOf(a)];
   }
 
   async function refresh() {
