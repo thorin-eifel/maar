@@ -302,3 +302,31 @@ textarea.code:focus-visible{outline-offset:-3px}
 @media(max-width:800px){.nic-row,.rule-row{grid-template-columns:1fr 1fr}}
 .checks{display:flex;flex-wrap:wrap;gap:8px 18px}
 .fp{display:inline-block;margin-left:8px;overflow-wrap:anywhere;font-size:11px}
+/* Inventarbaum und VM-Detailseite */
+.page.has-tree{display:grid;grid-template-columns:minmax(220px,290px) minmax(0,1fr);grid-template-rows:auto 1fr;align-content:start}
+.page.has-tree .topline{grid-column:1/-1}
+.page.has-tree main{grid-column:2;grid-row:2;min-width:0}
+.inv-tree{grid-column:1;grid-row:2;border-right:1px solid var(--line-soft);background:var(--surface-soft);padding:18px 10px 24px;position:sticky;top:63px;align-self:start;max-height:calc(100dvh - 63px);overflow:auto}
+.inv-head{padding:0 8px 10px}
+.inv-tree input[type=search]{width:100%;margin:0 0 12px;font-size:13px}
+.tree,.tree ul{list-style:none;margin:0;padding:0}
+.tree-row{display:flex;align-items:center;min-width:0}
+.tree-toggle{border:0;background:none;color:var(--muted);width:20px;height:26px;font-size:11px;cursor:pointer;padding:0;flex:none}
+.tree-link{display:flex;align-items:center;gap:7px;flex:1;min-width:0;padding:4px 8px;border-radius:4px;font-size:13px;color:var(--ink);text-decoration:none;line-height:1.4}
+.tree-link:hover{background:var(--brand-teal-200);color:var(--brand-teal-900)}
+.tree-link[aria-current="page"]{background:var(--ink);color:var(--bg)}
+.tree-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tree-count,.tree-hint{font:10px var(--mono);opacity:.7;flex:none}
+.dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--muted);display:inline-block}
+.dot.ok{background:oklch(62% .15 150)}.dot.info{background:oklch(62% .12 240)}.dot.bad{background:var(--action)}.dot.off{background:var(--line)}
+.tabs{display:flex;gap:2px;padding:0 clamp(24px,4vw,64px);border-bottom:1px solid var(--line-soft);background:var(--surface-soft);overflow-x:auto;position:sticky;top:63px;z-index:10}
+.tab{border:0;border-bottom:3px solid transparent;background:none;padding:12px 16px;font:inherit;font-size:14px;color:var(--muted);cursor:pointer;white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--action);font-weight:600}
+.tab .badge{margin-left:8px;display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:var(--line);color:var(--ink);font:11px/18px var(--mono);text-align:center}
+.tab .badge.bad{background:var(--action);color:#fff}
+.hw-row{margin-bottom:6px;overflow-wrap:anywhere}.hw-row:last-child{margin-bottom:0}
+.hw-row .sub{display:block;font-size:12px;color:var(--muted)}
+.name-link{color:inherit;text-decoration:none}.name-link:hover{text-decoration:underline}
+@media(max-width:1050px){.page.has-tree{grid-template-columns:minmax(190px,230px) minmax(0,1fr)}}
+@media(max-width:800px){.page.has-tree{display:flex}.inv-tree{position:static;max-height:260px;border-right:0;border-bottom:1px solid var(--line-soft)}.tabs{padding:0 16px;top:0;position:static}}

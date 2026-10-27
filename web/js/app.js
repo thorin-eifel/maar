@@ -2,6 +2,7 @@
 import { h, clear, toastError } from './ui.js';
 import { session, get, post, setUnauthorizedHandler } from './api.js';
 import { initJobs, toggleJobs } from './jobs.js';
+import { createInventory } from './inventory.js';
 
 const NAV = [
   ['Übersicht', [['01', 'Übersicht', '#/', 'dashboard']]],
@@ -14,7 +15,10 @@ const NAV = [
 ];
 
 const app = document.getElementById('app');
-let main = null, crumb = null, cleanup = null;
+let main = null, crumb = null, cleanup = null, inventory = null, pageEl = null, treeBtn = null;
+// Seiten, neben denen der Inventarbaum steht (wie die Inventaransichten im vSphere Client).
+const TREE_KEYS = new Set(['hosts', 'vms', 'vm', 'templates', 'console']);
+const treeShown = () => { try { return localStorage.getItem('maar.tree.hidden') !== '1'; } catch { return true; } };
 
 function setTheme(btn) {
   const root = document.documentElement;
@@ -67,6 +71,10 @@ function shell() {
   const jobsBtn = h('button', { class: 'mini-btn', type: 'button', id: 'jobs-btn', 'aria-expanded': 'false', onclick: () => toggleJobs() }, 'Aufgaben', badge);
   crumb = h('span', { class: 'meta' });
   main = h('main', { id: 'inhalt', tabindex: '-1' });
+  if (inventory) inventory.destroy();
+  inventory = createInventory();
+  treeBtn = h('button', { class: 'mini-btn', type: 'button', id: 'tree-btn', 'aria-pressed': String(treeShown()), hidden: true }, 'Inventar');
+  treeBtn.addEventListener('click', () => { const on = !treeShown(); try { localStorage.setItem('maar.tree.hidden', on ? '0' : '1'); } catch { /* privat */ } applyTree(); });
   clear(app, h('div', { class: 'layout' },
     h('aside', { class: 'sidebar', 'aria-label': 'Navigation' },
       h('a', { href: '#/', 'aria-label': 'Zur Übersicht' }, h('img', { class: 'logo', src: '/img/ctw-logo.png', alt: 'CTW' })),
@@ -76,16 +84,34 @@ function shell() {
         h('div', null, 'Angemeldet als ', h('strong', null, session.user), session.role && session.role !== 'admin' ? ` (${session.role})` : ''),
         h('div', null, logout),
         h('div', { class: 'mono' }, `maar ${session.version}`))),
-    h('div', { class: 'page' },
-      h('div', { class: 'topline' }, crumb, h('div', { class: 'top-actions' }, jobsBtn, themeToggle(), glassToggle())),
+    pageEl = h('div', { class: 'page' },
+      h('div', { class: 'topline' }, crumb, h('div', { class: 'top-actions' }, treeBtn, jobsBtn, themeToggle(), glassToggle())),
       main)));
   initJobs(badge);
+}
+
+function applyTree() {
+  const key = routeKey;
+  const on = TREE_KEYS.has(key);
+  treeBtn.hidden = !on;
+  const show = on && treeShown();
+  treeBtn.setAttribute('aria-pressed', String(show));
+  pageEl.classList.toggle('has-tree', show);
+  if (show) {
+    if (inventory.el.parentElement !== pageEl) pageEl.insertBefore(inventory.el, main);
+    inventory.start();
+    inventory.redraw();
+  } else {
+    inventory.el.remove();
+    inventory.stop();
+  }
 }
 
 const routes = {
   '': () => import('./views/dashboard.js'),
   performance: () => import('./views/performance.js'),
   vms: () => import('./views/vms.js'),
+  vm: () => import('./views/vm.js'),
   templates: () => import('./views/templates.js'),
   backup: () => import('./views/backup.js'),
   console: () => import('./views/console.js'),
@@ -106,17 +132,19 @@ const routes = {
   san: () => import('./views/san.js'),
 };
 
-let routeSeq = 0;
+let routeSeq = 0, routeKey = '';
 
 async function route() {
   if (!session.user) return;
   const [path, query] = location.hash.replace(/^#\/?/, '').split('?');
   const parts = path.split('/').map(decodeURIComponent);
   const key = routes[parts[0]] ? parts[0] : '';
+  routeKey = key;
   const seq = ++routeSeq;
+  const navKey = key === 'vm' ? 'vms' : key;
   if (cleanup) { try { cleanup(); } catch { /* egal */ } cleanup = null; }
   for (const a of app.querySelectorAll('.side-nav a')) {
-    if ((a.dataset.key === 'dashboard' && key === '') || a.dataset.key === key) a.setAttribute('aria-current', 'page');
+    if ((a.dataset.key === 'dashboard' && key === '') || a.dataset.key === navKey) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
   }
   const mod = (await routes[key]()).default;
@@ -135,6 +163,7 @@ async function route() {
     return;
   }
   cleanup = done;
+  applyTree();
   crumb.textContent = `${session.hostname} / ${mod.title}`;
   document.title = `${mod.title} · ${session.hostname}`;
   if (seq === routeSeq && document.activeElement === document.body) main.focus({ preventScroll: true });

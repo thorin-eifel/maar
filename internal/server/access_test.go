@@ -66,6 +66,8 @@ func TestRolesAndEvents(t *testing.T) {
 		{"POST", vm + "web01/unpause", "", false},
 		{"POST", vm + "web01/snapshots", `{"name":"vor-update"}`, false},
 		{"GET", vm + "web01/snapshots", "", false},
+		{"GET", vm + "web01/detail", "", false},
+		{"GET", vm + "db01/detail", "", true},
 		{"GET", ts.URL + "/api/overview", "", false},
 		{"POST", vm + "web01/kill", "", true},
 		{"POST", vm + "db01/stop", "", true},
@@ -83,6 +85,9 @@ func TestRolesAndEvents(t *testing.T) {
 	if _, out := do(t, c, "GET", vm, csrf, ""); strings.Contains(out, `"db01"`) {
 		t.Errorf("VM-Liste zeigt db01 trotz Eingrenzung")
 	}
+	if _, out := do(t, c, "GET", ts.URL+"/api/hosts", csrf, ""); strings.Contains(out, `"db01"`) || !strings.Contains(out, `"web01"`) {
+		t.Errorf("Hostliste ignoriert die Eingrenzung: %.200s", out)
+	}
 
 	// Betrachter: nur lesen.
 	setGrant(Grant{User: "demo", Role: "viewer"})
@@ -91,6 +96,12 @@ func TestRolesAndEvents(t *testing.T) {
 	}
 	if code, _ := do(t, c, "GET", ts.URL+"/api/services", csrf, ""); code != 200 {
 		t.Errorf("viewer lesen: %d", code)
+	}
+	if code, _ := do(t, c, "GET", ts.URL+"/ws/console/vm/web01", csrf, ""); code != http.StatusForbidden {
+		t.Errorf("viewer Konsole: %d", code)
+	}
+	if code, _ := do(t, c, "GET", vm+"web01/detail", csrf, ""); code != 200 {
+		t.Errorf("viewer Detailseite: %d", code)
 	}
 	if res, _ := c.Get(ts.URL + "/api/session"); res.StatusCode != 200 {
 		t.Errorf("Sitzung: %d", res.StatusCode)

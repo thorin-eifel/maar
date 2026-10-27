@@ -11,6 +11,10 @@ Auf dem Host wird außer dem Basissystem nichts benötigt.
 
 Das Menü folgt der Logik des vSphere Clients: **Inventar** (Hosts, VMs, Templates, Konsolen), **Speicher** (geteilter Speicher, lokale Datenträger, Backup), **Netzwerk** (VM-Netze/Portgruppen, Adapter & Routen, Paketfilter), **Überwachung** (Leistung & Alarme, Ereignisse, Prozesse, Protokolle), **Host-Konfiguration** (Dienste, Pakete & Updates, Benutzer, System, Konfigurationsdateien) und **Verwaltung** (Zugriffssteuerung). Snapshots liegen wie in vSphere an der einzelnen VM.
 
+**Inventarbaum:** Neben den Seiten Hosts, VMs, Templates und Konsolen steht ein Baum (Hosts → Host → VMs, Templates, Datastores, Portgruppen) mit Statuspunkten, Suche und Tastatursteuerung (Pfeiltasten, Pos1/Ende). Er lässt sich über „Inventar“ in der Kopfzeile ein- und ausblenden. Eingegrenzte Konten sehen nur ihre VMs. VMs anderer Hosts öffnen die Host-Seite; dort bleibt es beim Lesen.
+
+**VM-Detailseite** (Klick auf eine VM im Baum oder in der Liste) mit den Reitern Zusammenfassung (Status, CPU, Speicher, Hardware, Netz, Firewall, Sicherung, Ereignisse), Überwachen (Verlauf, Alarme, Ereignisse), Konfigurieren (vm.conf, Festplatten mit Format, Größe, Datastore und Basis-Template, Netzwerk, Firewall), Snapshots und Sicherung. Die Reiter sind verlinkbar (`#/vm/<name>/<reiter>`).
+
 | Bereich | Was geht | Werkzeuge darunter |
 |---|---|---|
 | Übersicht | CPU, Speicher, Laufzeit, Dateisysteme, VMs, ausgefallene Dienste, pf-Status | `sysctl`, `top -b`, `df`, `ifconfig` |
@@ -135,7 +139,7 @@ Die Gruppe (`-group`, Standard `wheel`) entscheidet, wer sich anmelden darf; die
 |---|---|
 | Administrator | alles |
 | Operator | lesen; zugewiesene VMs starten, herunterfahren, pausieren, per Konsole bedienen; Snapshots anlegen und zurücksetzen |
-| Betrachter | nur lesen – ohne Konfigurationsdateien, Schlüssel, Host-Shell und Rollenverwaltung |
+| Betrachter | nur lesen – ohne Konfigurationsdateien, Schlüssel, Konsolen (auch VM-Konsolen, weil interaktiv) und Rollenverwaltung |
 
 Ist ein Konto auf VMs eingegrenzt, sieht es nur diese in der VM-Liste und kann nur auf sie zugreifen (die Übersicht nennt weiterhin alle Namen). Eine Änderung der eigenen Rolle, die den Administrator-Zugriff entzieht, wird abgelehnt. Jede Anmeldung, verändernde Aktion und verweigerte Anfrage landet im Ereignisprotokoll und im Syslog. Aufträge (Pakete, Backups, Netz) stehen mit ihrer Ausgabe in der Aufgabenleiste; ihr Ende erscheint als Ereignis „Auftrag beendet“ (mit Fehlertext, falls fehlgeschlagen). Unter „Leistung & Alarme“ lassen sich zusätzlich die Mail-Alarme „Zugriff verweigert“ und „Anmeldung fehlgeschlagen“ einschalten (standardmäßig aus; höchstens eine gleiche Mail je 30 Minuten).
 

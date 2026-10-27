@@ -121,6 +121,10 @@ type Summary struct {
 	Alerts    []SummaryAlert `json:"alerts"`
 	Failed    []string       `json:"failed"`
 	Events    []AuditEvent   `json:"events"`
+	// Inventar: Namen für den Baum (fehlen bei älteren Peers)
+	Templates  []string `json:"templates"`
+	Datastores []string `json:"datastores"`
+	PortGroups []string `json:"portGroups"`
 }
 
 func (s *Server) localSummary(ctx context.Context) (*Summary, error) {
@@ -150,6 +154,7 @@ func (s *Server) localSummary(ctx context.Context) (*Summary, error) {
 		}
 	}
 	sum.Events = s.Events.Query("", "", "", "", 30)
+	sum.Templates, sum.Datastores, sum.PortGroups = s.Host.InventoryNames(ctx)
 	return sum, nil
 }
 
@@ -276,6 +281,18 @@ func (s *Server) hosts(w http.ResponseWriter, r *http.Request) {
 		local.Status, local.Error = "offline", err.Error()
 	} else {
 		local.Summary, local.Name = sum, sum.Hostname
+		// Eingegrenzte Konten sehen nur ihre VMs.
+		if g := s.Access.For(sessionFrom(r).User); g.Role != "admin" && len(g.VMs) > 0 {
+			keep := []SummaryVM{}
+			for _, v := range sum.VMs {
+				if contains(g.VMs, v.Name) {
+					keep = append(keep, v)
+				}
+			}
+			scoped := *sum
+			scoped.VMs = keep
+			local.Summary = &scoped
+		}
 	}
 	wg.Wait()
 	writeJSON(w, map[string]any{"hosts": append([]HostView{local}, views...), "now": time.Now().Unix()})

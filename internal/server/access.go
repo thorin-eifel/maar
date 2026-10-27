@@ -143,8 +143,9 @@ func (a *Access) Set(c AccessConfig, actor string, vms []string) error {
 var (
 	operatorActions = map[string]bool{"start": true, "stop": true, "pause": true, "unpause": true}
 	// Für Betrachter und Operatoren gesperrte Lesezugriffe (Konfigurationsdateien, Schlüssel).
-	readDenied = []string{"/api/file", "/api/backup/pubkey", "/api/access", "/api/tokens", "/ws/console/shell"}
-	operatorOK = map[string]bool{
+	readDenied   = []string{"/api/file", "/api/backup/pubkey", "/api/access", "/api/tokens", "/ws/console/shell"}
+	viewerDenied = []string{"/ws/console/"} // Konsolen sind interaktiv
+	operatorOK   = map[string]bool{
 		"POST /api/vms/{name}/snapshots":             true,
 		"POST /api/vms/{name}/snapshots/{id}/revert": true,
 	}
@@ -159,6 +160,13 @@ func (g Grant) allowed(r *http.Request) (bool, string) {
 	for _, p := range readDenied {
 		if path == p || strings.HasPrefix(path, p+"/") || (p == "/api/file" && path == "/api/files") {
 			return false, "nur für Administratoren"
+		}
+	}
+	if g.Role == "viewer" {
+		for _, p := range viewerDenied {
+			if strings.HasPrefix(path, p) {
+				return false, "Konsolen sind interaktiv – nicht für Betrachter"
+			}
 		}
 	}
 	if name := r.PathValue("name"); name != "" && (strings.HasPrefix(path, "/api/vms/") || strings.HasPrefix(path, "/ws/console/vm/")) {

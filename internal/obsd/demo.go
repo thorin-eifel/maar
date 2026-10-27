@@ -983,6 +983,9 @@ func writeFakeQcow2(p, backing string, size int64) error {
 	hdr := make([]byte, 512+len(backing))
 	copy(hdr, "QFI\xfb")
 	binary.BigEndian.PutUint32(hdr[4:], 3)
+	if size > 0 {
+		binary.BigEndian.PutUint64(hdr[24:], uint64(size)) // virtuelle Größe
+	}
 	if backing != "" {
 		binary.BigEndian.PutUint64(hdr[8:], 512)
 		binary.BigEndian.PutUint32(hdr[16:], uint32(len(backing)))

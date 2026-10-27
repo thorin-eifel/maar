@@ -3,6 +3,7 @@ import { get, post, put, del, q, upload } from '../api.js';
 import { watchJob, onJobDone } from '../jobs.js';
 import { deployDialog, toTemplateDialog } from '../deploy.js';
 import { backupNowDialog } from './backup.js';
+import { startFromISODialog, editBlockDialog, removeVMDialog, hardKillDialog } from '../vmactions.js';
 import { nicDialog, firewallDialog } from './vnet.js';
 
 const OPENBSD_ISO = 'https://cdn.openbsd.org/pub/OpenBSD/8.0/amd64/install80.iso';
@@ -42,7 +43,7 @@ export default {
       const actions = [];
       if (!running && !paused) {
         actions.push(btn('Starten', () => act(vm, 'start')));
-        if (data.overview.isos.length) actions.push(btn('Von ISO starten', () => startFromISO(vm)));
+        if (data.overview.isos.length) actions.push(btn('Von ISO starten', async () => startFromISODialog(vm.name, data.overview.isos, load)));
       }
       if (running) {
         actions.push(h('a', { class: 'mini-btn', href: `#/console/vm/${encodeURIComponent(vm.name)}` }, 'Konsole'));
@@ -51,9 +52,9 @@ export default {
       }
       if (paused) actions.push(btn('Fortsetzen', () => act(vm, 'unpause')));
       if (running || paused) actions.push(btn('Hart beenden', async () => {
-        if (await confirm({ title: `${vm.name} hart beenden?`, text: 'Entspricht dem Ziehen des Netzsteckers. Nicht gespeicherte Daten in der VM gehen verloren.', ok: 'Hart beenden', danger: true })) await act(vm, 'kill');
+        if (await hardKillDialog(vm.name)) await act(vm, 'kill');
       }, 'mini-btn danger'));
-      if (vm.conf) actions.push(btn('Konfiguration', () => editBlock(vm)));
+      if (vm.conf) actions.push(btn('Konfiguration', async () => editBlockDialog(vm, load)));
       if (vm.conf) actions.push(btn('Netzwerk', () => nicDialog(vm.name, load)), btn('Firewall', () => firewallDialog(vm.name, load)));
       if (vm.conf && c.disks.length) actions.push(btn('Jetzt sichern', () => backupNowDialog([vm.name])));
       if (vm.conf && c.disks.length) actions.push(h('a', { class: 'mini-btn', href: `#/vms/${encodeURIComponent(vm.name)}/snapshots` }, vm.snapshots ? `Snapshots (${vm.snapshots})` : 'Snapshots'));
@@ -61,12 +62,12 @@ export default {
         actions.push(btn('Klonen', () => deployDialog({ source: 'vm', from: vm.name, memory: c.memory || '1G', cpus: c.cpus || 1 })));
         actions.push(btn('Als Template', async () => toTemplateDialog(vm)));
       }
-      if (vm.conf && !running && !paused) actions.push(btn('Löschen', () => removeVM(vm), 'mini-btn danger'));
+      if (vm.conf && !running && !paused) actions.push(btn('Löschen', async () => { if (await removeVMDialog(vm)) await load(); }, 'mini-btn danger'));
 
       const nets = (c.interfaces || []).map(i => i.name === 'local' ? 'lokal (100.64/10)' : i.switch ? `Switch ${i.switch}` : i.name || 'tap').join(', ');
       return h('article', { class: 'vm-card', 'aria-labelledby': `vm-${vm.name}` },
         h('header', null,
-          h('div', null, h('span', { class: 'meta' }, vm.id !== '-' ? `ID ${vm.id} · PID ${vm.pid}` : 'nicht gestartet'), h('h3', { id: `vm-${vm.name}` }, vm.name)),
+          h('div', null, h('span', { class: 'meta' }, vm.id !== '-' ? `ID ${vm.id} · PID ${vm.pid}` : 'nicht gestartet'), h('h3', { id: `vm-${vm.name}` }, h('a', { href: `#/vm/${encodeURIComponent(vm.name)}`, class: 'name-link' }, vm.name))),
           vmStatePill(vm.state)),
         h('dl', { class: 'kv' },
           h('dt', null, 'Speicher'), h('dd', null, running ? `${vm.curmem} / ${vm.maxmem}` : (c.memory || vm.maxmem || '–')),
@@ -78,37 +79,6 @@ export default {
           running ? [h('dt', null, 'Konsole'), h('dd', { class: 'mono' }, `/dev/${vm.tty}${viewers ? ` · ${viewers} Zuschauer` : ''}`)] : null,
           c.owner ? [h('dt', null, 'Besitzer'), h('dd', null, c.owner)] : null),
         h('footer', null, actions));
-    }
-
-    function startFromISO(vm) {
-      const sel = h('select', { required: true }, data.overview.isos.map(i => h('option', { value: i.path }, i.name)));
-      formDialog({
-        title: `${vm.name} von ISO starten`, meta: 'EINMALIG', text: 'Startet die VM einmalig mit dem gewählten Medium als CD-ROM und bootet davon (vmctl start -r … -B cdrom).',
-        fields: [h('div', { class: 'wide' }, field('Installationsmedium', sel))], submit: 'Starten',
-        onSubmit: () => act(vm, 'start', { cdrom: sel.value }),
-      });
-    }
-
-    function editBlock(vm) {
-      const ta = h('textarea', { rows: 14, spellcheck: 'false', value: vm.conf.raw.trim() });
-      formDialog({
-        title: `Konfiguration von ${vm.name}`, meta: '/ETC/VM.CONF', wide: true,
-        text: 'Block aus vm.conf(5). Vor dem Speichern prüft vmd -n die Syntax; danach folgt vmctl reload. Laufende VMs übernehmen Änderungen beim nächsten Start.',
-        fields: [h('div', { class: 'wide' }, field('vm-Block', ta))],
-        onSubmit: async () => { const r = await put(`/api/vms/${encodeURIComponent(vm.name)}/config`, { block: ta.value }); toast(r.message); await load(); },
-      });
-    }
-
-    async function removeVM(vm) {
-      const ok = await confirm({ title: `${vm.name} löschen?`, text: `Der Block wird aus vm.conf entfernt. ${vm.conf.disks.length ? 'Die Disk-Images bleiben erhalten, außer du löschst sie unten mit.' : ''}`, ok: 'VM löschen', danger: true, typeToConfirm: vm.name });
-      if (!ok) return;
-      let withDisks = false;
-      if (vm.conf.disks.length) {
-        withDisks = await confirm({ title: 'Disk-Images ebenfalls löschen?', text: vm.conf.disks.join('\n'), ok: 'Ja, Images löschen', danger: true });
-      }
-      const r = await del(`/api/vms/${encodeURIComponent(vm.name)}${withDisks ? '?disks=1' : ''}`);
-      toast(r.message);
-      await load();
     }
 
     function createVM() {
