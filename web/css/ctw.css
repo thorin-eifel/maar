@@ -390,3 +390,15 @@ a.tab{display:inline-flex;align-items:center}
 .cp-open:hover,.cp-open:focus-visible{background:rgba(0,0,0,.25)}
 .cp-open:hover span,.cp-open:focus-visible span{opacity:1}
 .cp-bar{display:flex;align-items:center;gap:8px;margin-top:8px}
+
+/* Version in der Seitenleiste öffnet „Über maar“ */
+.version-link{appearance:none;background:none;border:0;padding:0;margin:0;text-align:left;cursor:pointer;color:var(--muted);font-size:12px}
+.version-link:hover,.version-link:focus-visible{color:var(--ink);text-decoration:underline}
+.about{display:grid;gap:22px}
+.about-sec h4{margin:6px 0 8px;font-size:20px;font-weight:500}
+.about-sec p{margin:0 0 12px}
+.about-sec+.about-sec{border-top:1px solid var(--line-soft);padding-top:20px}
+.about-kv{margin:0}
+.about-kv a{display:inline-flex;align-items:center;gap:5px}
+.ext-icon{width:12px;height:12px;opacity:.6}
+.about-sec .hint{margin:14px 0 0}

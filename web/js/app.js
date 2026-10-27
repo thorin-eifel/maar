@@ -5,6 +5,7 @@ import { initJobs, toggleJobs } from './jobs.js';
 import { createInventory } from './inventory.js';
 import { icon } from './icons.js';
 import { startDecorating } from './decorate.js';
+import { aboutDialog } from './about.js';
 
 const NAV = [
   ['Übersicht', 'home', [['Übersicht', '#/', 'dashboard', 'home']]],
@@ -94,7 +95,7 @@ function shell() {
       h('div', { class: 'side-bottom' },
         h('div', null, 'Angemeldet als ', h('strong', null, session.user), session.role && session.role !== 'admin' ? ` (${session.role})` : ''),
         h('div', null, logout),
-        h('div', { class: 'mono' }, `maar ${session.version}`))),
+        h('button', { class: 'version-link mono', type: 'button', title: 'Über maar', onclick: () => aboutDialog() }, `maar ${session.version}`))),
     pageEl = h('div', { class: 'page' },
       h('div', { class: 'topline' }, crumb, h('div', { class: 'top-actions' }, jobsBtn, themeToggle())),
       main)));
