@@ -1,0 +1,4 @@
+dhcp
+inet6 autoconf
+description "Uplink"
+up

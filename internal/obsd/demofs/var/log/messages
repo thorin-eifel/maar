@@ -1,0 +1,200 @@
+Oct 26 10:20:00 nordlicht smtpd[9620]: info: OpenSMTPD 8.0.0 starting
+Oct 26 10:27:00 nordlicht dhcpd[10002]: DHCPDISCOVER from fe:e1:ba:d0:12:01 via vport0
+Oct 26 10:34:00 nordlicht unbound: [9500:0] info: generate keytag query _ta-4f66. NULL IN
+Oct 26 10:41:00 nordlicht vmd[3122]: web01: started vm 1 successfully, tty /dev/ttyp0
+Oct 26 10:48:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 26 10:55:00 nordlicht /bsd: vio0 at virtio0: address fe:e1:ba:d0:12:01
+Oct 26 11:02:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 26 11:09:00 nordlicht smtpd[9620]: info: OpenSMTPD 8.0.0 starting
+Oct 26 11:16:00 nordlicht vmd[3122]: web01: started vm 1 successfully, tty /dev/ttyp0
+Oct 26 11:23:00 nordlicht /bsd: vio0 at virtio0: address fe:e1:ba:d0:12:01
+Oct 26 11:30:00 nordlicht dhcpd[10002]: DHCPOFFER on 10.0.0.11 to fe:e1:ba:d0:12:01 via vport0
+Oct 26 11:37:00 nordlicht vmd[3122]: web01: started vm 1 successfully, tty /dev/ttyp0
+Oct 26 11:44:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 26 11:51:00 nordlicht unbound: [9500:0] info: generate keytag query _ta-4f66. NULL IN
+Oct 26 11:58:00 nordlicht unbound: [9500:0] info: generate keytag query _ta-4f66. NULL IN
+Oct 26 12:05:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 26 12:12:00 nordlicht dhcpd[10002]: DHCPOFFER on 10.0.0.11 to fe:e1:ba:d0:12:01 via vport0
+Oct 26 12:19:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 26 12:26:00 nordlicht /bsd: vio0 at virtio0: address fe:e1:ba:d0:12:01
+Oct 26 12:33:00 nordlicht unbound: [9500:0] info: generate keytag query _ta-4f66. NULL IN
+Oct 26 12:40:00 nordlicht vmd[3122]: web01: started vm 1 successfully, tty /dev/ttyp0
+Oct 26 12:47:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 26 12:54:00 nordlicht dhcpd[10002]: DHCPOFFER on 10.0.0.11 to fe:e1:ba:d0:12:01 via vport0
+Oct 26 13:01:00 nordlicht vmd[3122]: web01: started vm 1 successfully, tty /dev/ttyp0
+Oct 26 13:08:00 nordlicht unbound: [9500:0] info: generate keytag query _ta-4f66. NULL IN
+Oct 26 13:15:00 nordlicht vmd[3122]: web01: started vm 1 successfully, tty /dev/ttyp0
+Oct 26 13:22:00 nordlicht dhcpd[10002]: DHCPOFFER on 10.0.0.11 to fe:e1:ba:d0:12:01 via vport0
+Oct 26 13:29:00 nordlicht vmd[3122]: web01: started vm 1 successfully, tty /dev/ttyp0
+Oct 26 13:36:00 nordlicht /bsd: vio0 at virtio0: address fe:e1:ba:d0:12:01
+Oct 26 13:43:00 nordlicht dhcpd[10002]: DHCPDISCOVER from fe:e1:ba:d0:12:01 via vport0
+Oct 26 13:50:00 nordlicht ntpd[8124]: adjusting local clock by -0.004121s
+Oct 26 13:57:00 nordlicht unbound: [9500:0] info: generate keytag query _ta-4f66. NULL IN
+Oct 26 14:04:00 nordlicht dhcpd[10002]: DHCPDISCOVER from fe:e1:ba:d0:12:01 via vport0
+Oct 26 14:11:00 nordlicht /bsd: vio0 at virtio0: address fe:e1:ba:d0:12:01
+Oct 26 14:18:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 26 14:25:00 nordlicht ntpd[8124]: adjusting local clock by -0.004121s
+Oct 26 14:32:00 nordlicht /bsd: vio0 at virtio0: address fe:e1:ba:d0:12:01
+Oct 26 14:39:00 nordlicht dhcpd[10002]: DHCPDISCOVER from fe:e1:ba:d0:12:01 via vport0
+Oct 26 14:46:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 26 14:53:00 nordlicht dhcpd[10002]: DHCPOFFER on 10.0.0.11 to fe:e1:ba:d0:12:01 via vport0
+Oct 26 15:00:00 nordlicht smtpd[9620]: info: OpenSMTPD 8.0.0 starting
+Oct 26 15:07:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 26 15:14:00 nordlicht /bsd: vio0 at virtio0: address fe:e1:ba:d0:12:01
+Oct 26 15:21:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 26 15:28:00 nordlicht vmd[3122]: web01: started vm 1 successfully, tty /dev/ttyp0
+Oct 26 15:35:00 nordlicht dhcpd[10002]: DHCPOFFER on 10.0.0.11 to fe:e1:ba:d0:12:01 via vport0
+Oct 26 15:42:00 nordlicht httpd[9310]: nordlicht.ctw.lan 192.168.50.23 - - "GET / HTTP/1.1" 200 4211
+Oct 26 15:49:00 nordlicht /bsd: vio0 at virtio0: address fe:e1:ba:d0:12:01
+Oct 26 15:56:00 nordlicht unbound: [9500:0] info: generate keytag query _ta-4f66. NULL IN
+Oct 26 16:03:00 nordlicht smtpd[9620]: info: OpenSMTPD 8.0.0 starting
+Oct 26 16:10:00 nordlicht httpd[9310]: nordlicht.ctw.lan 192.168.50.23 - - "GET / HTTP/1.1" 200 4211
+Oct 26 16:17:00 nordlicht httpd[9310]: nordlicht.ctw.lan 192.168.50.23 - - "GET / HTTP/1.1" 200 4211
+Oct 26 16:24:00 nordlicht smtpd[9620]: info: OpenSMTPD 8.0.0 starting
+Oct 26 16:31:00 nordlicht ntpd[8124]: adjusting local clock by -0.004121s
+Oct 26 16:38:00 nordlicht dhcpd[10002]: DHCPOFFER on 10.0.0.11 to fe:e1:ba:d0:12:01 via vport0
+Oct 26 16:45:00 nordlicht dhcpd[10002]: DHCPDISCOVER from fe:e1:ba:d0:12:01 via vport0
+Oct 26 16:52:00 nordlicht dhcpd[10002]: DHCPOFFER on 10.0.0.11 to fe:e1:ba:d0:12:01 via vport0
+Oct 26 16:59:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 26 17:06:00 nordlicht ntpd[8124]: adjusting local clock by -0.004121s
+Oct 26 17:13:00 nordlicht /bsd: vio0 at virtio0: address fe:e1:ba:d0:12:01
+Oct 26 17:20:00 nordlicht httpd[9310]: nordlicht.ctw.lan 192.168.50.23 - - "GET / HTTP/1.1" 200 4211
+Oct 26 17:27:00 nordlicht smtpd[9620]: info: OpenSMTPD 8.0.0 starting
+Oct 26 17:34:00 nordlicht httpd[9310]: nordlicht.ctw.lan 192.168.50.23 - - "GET / HTTP/1.1" 200 4211
+Oct 26 17:41:00 nordlicht ntpd[8124]: adjusting local clock by -0.004121s
+Oct 26 17:48:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 26 17:55:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 26 18:02:00 nordlicht /bsd: vio0 at virtio0: address fe:e1:ba:d0:12:01
+Oct 26 18:09:00 nordlicht unbound: [9500:0] info: generate keytag query _ta-4f66. NULL IN
+Oct 26 18:16:00 nordlicht dhcpd[10002]: DHCPDISCOVER from fe:e1:ba:d0:12:01 via vport0
+Oct 26 18:23:00 nordlicht smtpd[9620]: info: OpenSMTPD 8.0.0 starting
+Oct 26 18:30:00 nordlicht dhcpd[10002]: DHCPDISCOVER from fe:e1:ba:d0:12:01 via vport0
+Oct 26 18:37:00 nordlicht httpd[9310]: nordlicht.ctw.lan 192.168.50.23 - - "GET / HTTP/1.1" 200 4211
+Oct 26 18:44:00 nordlicht unbound: [9500:0] info: generate keytag query _ta-4f66. NULL IN
+Oct 26 18:51:00 nordlicht vmd[3122]: web01: started vm 1 successfully, tty /dev/ttyp0
+Oct 26 18:58:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 26 19:05:00 nordlicht /bsd: vio0 at virtio0: address fe:e1:ba:d0:12:01
+Oct 26 19:12:00 nordlicht smtpd[9620]: info: OpenSMTPD 8.0.0 starting
+Oct 26 19:19:00 nordlicht smtpd[9620]: info: OpenSMTPD 8.0.0 starting
+Oct 26 19:26:00 nordlicht smtpd[9620]: info: OpenSMTPD 8.0.0 starting
+Oct 26 19:33:00 nordlicht httpd[9310]: nordlicht.ctw.lan 192.168.50.23 - - "GET / HTTP/1.1" 200 4211
+Oct 26 19:40:00 nordlicht httpd[9310]: nordlicht.ctw.lan 192.168.50.23 - - "GET / HTTP/1.1" 200 4211
+Oct 26 19:47:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 26 19:54:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 26 20:01:00 nordlicht ntpd[8124]: adjusting local clock by -0.004121s
+Oct 26 20:08:00 nordlicht httpd[9310]: nordlicht.ctw.lan 192.168.50.23 - - "GET / HTTP/1.1" 200 4211
+Oct 26 20:15:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 26 20:22:00 nordlicht vmd[3122]: web01: started vm 1 successfully, tty /dev/ttyp0
+Oct 26 20:29:00 nordlicht ntpd[8124]: adjusting local clock by -0.004121s
+Oct 26 20:36:00 nordlicht httpd[9310]: nordlicht.ctw.lan 192.168.50.23 - - "GET / HTTP/1.1" 200 4211
+Oct 26 20:43:00 nordlicht ntpd[8124]: adjusting local clock by -0.004121s
+Oct 26 20:50:00 nordlicht unbound: [9500:0] info: generate keytag query _ta-4f66. NULL IN
+Oct 26 20:57:00 nordlicht smtpd[9620]: info: OpenSMTPD 8.0.0 starting
+Oct 26 21:04:00 nordlicht vmd[3122]: web01: started vm 1 successfully, tty /dev/ttyp0
+Oct 26 21:11:00 nordlicht httpd[9310]: nordlicht.ctw.lan 192.168.50.23 - - "GET / HTTP/1.1" 200 4211
+Oct 26 21:18:00 nordlicht smtpd[9620]: info: OpenSMTPD 8.0.0 starting
+Oct 26 21:25:00 nordlicht dhcpd[10002]: DHCPDISCOVER from fe:e1:ba:d0:12:01 via vport0
+Oct 26 21:32:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 26 21:39:00 nordlicht httpd[9310]: nordlicht.ctw.lan 192.168.50.23 - - "GET / HTTP/1.1" 200 4211
+Oct 26 21:46:00 nordlicht vmd[3122]: web01: started vm 1 successfully, tty /dev/ttyp0
+Oct 26 21:53:00 nordlicht dhcpd[10002]: DHCPOFFER on 10.0.0.11 to fe:e1:ba:d0:12:01 via vport0
+Oct 26 22:00:00 nordlicht ntpd[8124]: adjusting local clock by -0.004121s
+Oct 26 22:07:00 nordlicht dhcpd[10002]: DHCPDISCOVER from fe:e1:ba:d0:12:01 via vport0
+Oct 26 22:14:00 nordlicht dhcpd[10002]: DHCPOFFER on 10.0.0.11 to fe:e1:ba:d0:12:01 via vport0
+Oct 26 22:21:00 nordlicht unbound: [9500:0] info: generate keytag query _ta-4f66. NULL IN
+Oct 26 22:28:00 nordlicht unbound: [9500:0] info: generate keytag query _ta-4f66. NULL IN
+Oct 26 22:35:00 nordlicht httpd[9310]: nordlicht.ctw.lan 192.168.50.23 - - "GET / HTTP/1.1" 200 4211
+Oct 26 22:42:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 26 22:49:00 nordlicht dhcpd[10002]: DHCPDISCOVER from fe:e1:ba:d0:12:01 via vport0
+Oct 26 22:56:00 nordlicht httpd[9310]: nordlicht.ctw.lan 192.168.50.23 - - "GET / HTTP/1.1" 200 4211
+Oct 26 23:03:00 nordlicht unbound: [9500:0] info: generate keytag query _ta-4f66. NULL IN
+Oct 26 23:10:00 nordlicht /bsd: vio0 at virtio0: address fe:e1:ba:d0:12:01
+Oct 26 23:17:00 nordlicht ntpd[8124]: adjusting local clock by -0.004121s
+Oct 26 23:24:00 nordlicht dhcpd[10002]: DHCPDISCOVER from fe:e1:ba:d0:12:01 via vport0
+Oct 26 23:31:00 nordlicht unbound: [9500:0] info: generate keytag query _ta-4f66. NULL IN
+Oct 26 23:38:00 nordlicht /bsd: vio0 at virtio0: address fe:e1:ba:d0:12:01
+Oct 26 23:45:00 nordlicht ntpd[8124]: adjusting local clock by -0.004121s
+Oct 26 23:52:00 nordlicht unbound: [9500:0] info: generate keytag query _ta-4f66. NULL IN
+Oct 26 23:59:00 nordlicht smtpd[9620]: info: OpenSMTPD 8.0.0 starting
+Oct 27 00:06:00 nordlicht unbound: [9500:0] info: generate keytag query _ta-4f66. NULL IN
+Oct 27 00:13:00 nordlicht dhcpd[10002]: DHCPOFFER on 10.0.0.11 to fe:e1:ba:d0:12:01 via vport0
+Oct 27 00:20:00 nordlicht dhcpd[10002]: DHCPDISCOVER from fe:e1:ba:d0:12:01 via vport0
+Oct 27 00:27:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 27 00:34:00 nordlicht dhcpd[10002]: DHCPDISCOVER from fe:e1:ba:d0:12:01 via vport0
+Oct 27 00:41:00 nordlicht dhcpd[10002]: DHCPDISCOVER from fe:e1:ba:d0:12:01 via vport0
+Oct 27 00:48:00 nordlicht dhcpd[10002]: DHCPOFFER on 10.0.0.11 to fe:e1:ba:d0:12:01 via vport0
+Oct 27 00:55:00 nordlicht dhcpd[10002]: DHCPOFFER on 10.0.0.11 to fe:e1:ba:d0:12:01 via vport0
+Oct 27 01:02:00 nordlicht vmd[3122]: web01: started vm 1 successfully, tty /dev/ttyp0
+Oct 27 01:09:00 nordlicht httpd[9310]: nordlicht.ctw.lan 192.168.50.23 - - "GET / HTTP/1.1" 200 4211
+Oct 27 01:16:00 nordlicht dhcpd[10002]: DHCPDISCOVER from fe:e1:ba:d0:12:01 via vport0
+Oct 27 01:23:00 nordlicht ntpd[8124]: adjusting local clock by -0.004121s
+Oct 27 01:30:00 nordlicht ntpd[8124]: adjusting local clock by -0.004121s
+Oct 27 01:37:00 nordlicht vmd[3122]: web01: started vm 1 successfully, tty /dev/ttyp0
+Oct 27 01:44:00 nordlicht dhcpd[10002]: DHCPDISCOVER from fe:e1:ba:d0:12:01 via vport0
+Oct 27 01:51:00 nordlicht unbound: [9500:0] info: generate keytag query _ta-4f66. NULL IN
+Oct 27 01:58:00 nordlicht /bsd: vio0 at virtio0: address fe:e1:ba:d0:12:01
+Oct 27 02:05:00 nordlicht smtpd[9620]: info: OpenSMTPD 8.0.0 starting
+Oct 27 02:12:00 nordlicht smtpd[9620]: info: OpenSMTPD 8.0.0 starting
+Oct 27 02:19:00 nordlicht dhcpd[10002]: DHCPDISCOVER from fe:e1:ba:d0:12:01 via vport0
+Oct 27 02:26:00 nordlicht /bsd: vio0 at virtio0: address fe:e1:ba:d0:12:01
+Oct 27 02:33:00 nordlicht vmd[3122]: web01: started vm 1 successfully, tty /dev/ttyp0
+Oct 27 02:40:00 nordlicht httpd[9310]: nordlicht.ctw.lan 192.168.50.23 - - "GET / HTTP/1.1" 200 4211
+Oct 27 02:47:00 nordlicht /bsd: vio0 at virtio0: address fe:e1:ba:d0:12:01
+Oct 27 02:54:00 nordlicht unbound: [9500:0] info: generate keytag query _ta-4f66. NULL IN
+Oct 27 03:01:00 nordlicht unbound: [9500:0] info: generate keytag query _ta-4f66. NULL IN
+Oct 27 03:08:00 nordlicht unbound: [9500:0] info: generate keytag query _ta-4f66. NULL IN
+Oct 27 03:15:00 nordlicht unbound: [9500:0] info: generate keytag query _ta-4f66. NULL IN
+Oct 27 03:22:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 27 03:29:00 nordlicht httpd[9310]: nordlicht.ctw.lan 192.168.50.23 - - "GET / HTTP/1.1" 200 4211
+Oct 27 03:36:00 nordlicht unbound: [9500:0] info: generate keytag query _ta-4f66. NULL IN
+Oct 27 03:43:00 nordlicht vmd[3122]: web01: started vm 1 successfully, tty /dev/ttyp0
+Oct 27 03:50:00 nordlicht dhcpd[10002]: DHCPOFFER on 10.0.0.11 to fe:e1:ba:d0:12:01 via vport0
+Oct 27 03:57:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 27 04:04:00 nordlicht dhcpd[10002]: DHCPOFFER on 10.0.0.11 to fe:e1:ba:d0:12:01 via vport0
+Oct 27 04:11:00 nordlicht httpd[9310]: nordlicht.ctw.lan 192.168.50.23 - - "GET / HTTP/1.1" 200 4211
+Oct 27 04:18:00 nordlicht dhcpd[10002]: DHCPDISCOVER from fe:e1:ba:d0:12:01 via vport0
+Oct 27 04:25:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 27 04:32:00 nordlicht smtpd[9620]: info: OpenSMTPD 8.0.0 starting
+Oct 27 04:39:00 nordlicht vmd[3122]: web01: started vm 1 successfully, tty /dev/ttyp0
+Oct 27 04:46:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 27 04:53:00 nordlicht vmd[3122]: web01: started vm 1 successfully, tty /dev/ttyp0
+Oct 27 05:00:00 nordlicht dhcpd[10002]: DHCPDISCOVER from fe:e1:ba:d0:12:01 via vport0
+Oct 27 05:07:00 nordlicht /bsd: vio0 at virtio0: address fe:e1:ba:d0:12:01
+Oct 27 05:14:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 27 05:21:00 nordlicht smtpd[9620]: info: OpenSMTPD 8.0.0 starting
+Oct 27 05:28:00 nordlicht vmd[3122]: web01: started vm 1 successfully, tty /dev/ttyp0
+Oct 27 05:35:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 27 05:42:00 nordlicht dhcpd[10002]: DHCPOFFER on 10.0.0.11 to fe:e1:ba:d0:12:01 via vport0
+Oct 27 05:49:00 nordlicht unbound: [9500:0] info: generate keytag query _ta-4f66. NULL IN
+Oct 27 05:56:00 nordlicht dhcpd[10002]: DHCPDISCOVER from fe:e1:ba:d0:12:01 via vport0
+Oct 27 06:03:00 nordlicht ntpd[8124]: adjusting local clock by -0.004121s
+Oct 27 06:10:00 nordlicht smtpd[9620]: info: OpenSMTPD 8.0.0 starting
+Oct 27 06:17:00 nordlicht smtpd[9620]: info: OpenSMTPD 8.0.0 starting
+Oct 27 06:24:00 nordlicht httpd[9310]: nordlicht.ctw.lan 192.168.50.23 - - "GET / HTTP/1.1" 200 4211
+Oct 27 06:31:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 27 06:38:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 27 06:45:00 nordlicht httpd[9310]: nordlicht.ctw.lan 192.168.50.23 - - "GET / HTTP/1.1" 200 4211
+Oct 27 06:52:00 nordlicht httpd[9310]: nordlicht.ctw.lan 192.168.50.23 - - "GET / HTTP/1.1" 200 4211
+Oct 27 06:59:00 nordlicht httpd[9310]: nordlicht.ctw.lan 192.168.50.23 - - "GET / HTTP/1.1" 200 4211
+Oct 27 07:06:00 nordlicht httpd[9310]: nordlicht.ctw.lan 192.168.50.23 - - "GET / HTTP/1.1" 200 4211
+Oct 27 07:13:00 nordlicht ntpd[8124]: adjusting local clock by -0.004121s
+Oct 27 07:20:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 27 07:27:00 nordlicht dhcpd[10002]: DHCPDISCOVER from fe:e1:ba:d0:12:01 via vport0
+Oct 27 07:34:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 27 07:41:00 nordlicht smtpd[9620]: info: OpenSMTPD 8.0.0 starting
+Oct 27 07:48:00 nordlicht ntpd[8124]: adjusting local clock by -0.004121s
+Oct 27 07:55:00 nordlicht httpd[9310]: nordlicht.ctw.lan 192.168.50.23 - - "GET / HTTP/1.1" 200 4211
+Oct 27 08:02:00 nordlicht dhcpd[10002]: DHCPDISCOVER from fe:e1:ba:d0:12:01 via vport0
+Oct 27 08:09:00 nordlicht /bsd: vio0 at virtio0: address fe:e1:ba:d0:12:01
+Oct 27 08:16:00 nordlicht vmd[3122]: web01: started vm 1 successfully, tty /dev/ttyp0
+Oct 27 08:23:00 nordlicht dhcpd[10002]: DHCPOFFER on 10.0.0.11 to fe:e1:ba:d0:12:01 via vport0
+Oct 27 08:30:00 nordlicht /bsd: vio0 at virtio0: address fe:e1:ba:d0:12:01
+Oct 27 08:37:00 nordlicht smtpd[9620]: info: OpenSMTPD 8.0.0 starting
+Oct 27 08:44:00 nordlicht dhcpd[10002]: DHCPDISCOVER from fe:e1:ba:d0:12:01 via vport0
+Oct 27 08:51:00 nordlicht /bsd: vio0 at virtio0: address fe:e1:ba:d0:12:01
+Oct 27 08:58:00 nordlicht vmd[3122]: web01: started vm 1 successfully, tty /dev/ttyp0
+Oct 27 09:05:00 nordlicht /bsd: vio0 at virtio0: address fe:e1:ba:d0:12:01
+Oct 27 09:12:00 nordlicht ntpd[8124]: adjusting local clock by -0.004121s
+Oct 27 09:19:00 nordlicht vmd[3122]: db01: started vm 2 successfully, tty /dev/ttyp1
+Oct 27 09:26:00 nordlicht ntpd[8124]: adjusting local clock by -0.004121s
+Oct 27 09:33:00 nordlicht /bsd: vio0 at virtio0: address fe:e1:ba:d0:12:01

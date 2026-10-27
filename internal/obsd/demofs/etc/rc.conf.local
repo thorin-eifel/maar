@@ -1,0 +1,7 @@
+dhcpd_flags=vport0
+httpd_flags=
+ntpd_flags=-s
+pkg_scripts=
+smtpd_flags=
+unbound_flags=
+vmd_flags=

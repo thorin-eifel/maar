@@ -1,0 +1,17 @@
+wheel:*:0:root,thorin
+daemon:*:1:daemon
+kmem:*:2:root
+sys:*:3:root
+tty:*:4:root
+operator:*:5:root,thorin
+bin:*:7:
+staff:*:20:root,mara
+sshd:*:27:
+_vmd:*:111:
+www:*:67:
+_dhcp:*:77:
+_unbound:*:96:
+nobody:*:32767:
+thorin:*:1000:
+mara:*:1001:
+backup:*:1002:

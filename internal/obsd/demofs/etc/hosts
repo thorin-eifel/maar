@@ -1,0 +1,5 @@
+127.0.0.1	localhost
+::1		localhost
+192.168.50.10	nordlicht.ctw.lan nordlicht
+10.0.0.11	web01.vm.ctw.lan web01
+10.0.0.12	db01.vm.ctw.lan db01

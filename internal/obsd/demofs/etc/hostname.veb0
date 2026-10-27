@@ -1,0 +1,4 @@
+add vport0
+description "VM-Switch intern"
+link1
+up

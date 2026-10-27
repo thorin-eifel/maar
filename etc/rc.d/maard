@@ -1,0 +1,14 @@
+#!/bin/ksh
+#
+# rc.d-Skript für maar – nach /etc/rc.d/maard kopieren (Modus 0555).
+
+daemon="/usr/local/sbin/maard"
+daemon_flags="-listen :9443"
+daemon_logger="daemon.info"
+
+. /etc/rc.d/rc.subr
+
+rc_bg=YES
+rc_reload=NO
+
+rc_cmd $1

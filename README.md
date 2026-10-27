@@ -1,0 +1,232 @@
+# maar – OpenBSD-Verwaltung im CTW Design System 2027
+
+Web-Oberfläche für einen OpenBSD-Host (getestet gegen die Ausgaben von OpenBSD 8.0): System,
+virtuelle Maschinen (vmd) inklusive serieller Konsolen im Browser, Dienste, Pakete und Patches,
+Benutzer, Netzwerk, Paketfilter, Konfigurationsdateien und Protokolle.
+
+Ein einzelnes statisches Go-Binary; die Oberfläche (HTML, CSS, JS, xterm.js) ist eingebettet.
+Auf dem Host wird außer dem Basissystem nichts benötigt.
+
+## Funktionen
+
+| Bereich | Was geht | Werkzeuge darunter |
+|---|---|---|
+| Übersicht | CPU, Speicher, Laufzeit, Dateisysteme, VMs, ausgefallene Dienste, pf-Status | `sysctl`, `top -b`, `df`, `ifconfig` |
+| Virtuelle Maschinen | anlegen (Disk, ISO, Switch, Besitzer, Autostart), starten, von ISO starten, herunterfahren, hart beenden, pausieren, vm.conf-Block bearbeiten, löschen; Disk-Images anlegen (auch qcow2-Overlay), ISOs herunterladen/hochladen; Switches | `vmctl`, `/etc/vm.conf`, `vmd -n` |
+| Templates | Bibliothek schreibgeschützter Basisimages; Import per URL (z. B. Debian-Cloud-Image) oder aus vorhandenem Image, „VM als Template speichern“; Bereitstellung als verknüpfter Klon (qcow2-Overlay) oder Vollkopie; Klonen gestoppter VMs; Löschschutz, solange Klone darauf basieren | `vmctl create -b/-i`, qcow2-Header |
+| Snapshots | Offline-Snapshots pro VM als qcow2-Kette (alle Disks), Baumansicht mit Verzweigungen, Zurücksetzen (optional mit Sicherung des aktuellen Zustands), Zusammenführen, Umbenennen, alles konsolidieren | `vmctl create -b`, `qemu-img rebase` (Paket `qemu`, nur fürs Zusammenführen) |
+| Leistung & Alarme | Verlauf von CPU, Speicher, Load und Netz für den Host sowie CPU, Speicher und Netz je VM (2 h in 10-s-Schritten, 7 Tage als 5-min-Mittel), Diagramme mit Tooltip und Tabellenansicht; Alarmregeln mit Schwellwert und Mindestdauer, Ereignisse (Dienst ausgefallen, VM unerwartet gestoppt, Sicherung fehlgeschlagen), Mail an lokale Konten oder Adressen | `sysctl kern.cp_time`, `vmstat -s`, `netstat -ibn`, `ps`, `mail(1)` |
+| Backup | Jobs mit Zeitplan (stündlich, täglich, wöchentlich, manuell) und Aufbewahrung je VM; Ziele lokal, NFS oder SFTP; Modi Snapshot, Offline, Pause; „Jetzt sichern“ je VM; Wiederherstellen als neue VM (optional ohne Netz) oder über die bestehende VM mit Sicherheits-Snapshot; Verlauf | `vmctl create -i`, `mount -t nfs`, `sftp -b`, Snapshot-Kette |
+| Gastanpassung | Hostname, DHCP/statische IP, Gateway, DNS, Benutzer, Passwort, SSH-Schlüssel und neue SSH-Hostschlüssel beim ersten Start – über eine Seed-ISO (Label `CIDATA`) | cloud-init NoCloud (Linux), `maar-guest` (OpenBSD), `makefs -t cd9660` |
+| Konsolen | serielle Konsole jeder laufenden VM (geteilt zwischen Administratoren, mit 64 KB Verlauf), Login-Shell auf dem Host | TTY der VM (wie `vmctl console`), `su -l` im PTY |
+| Dienste | starten, stoppen, neu laden, aktivieren, Flags setzen, Filter „ausgefallen“ | `rcctl` |
+| Pakete & Updates | suchen, installieren, entfernen, alle aktualisieren, verwaiste entfernen, `syspatch`, `fw_update`, `sysupgrade -n` (ohne Neustart) | `pkg_add`, `pkg_delete`, `pkg_info` |
+| Benutzer | anlegen, bearbeiten, Passwort, sperren, löschen, Gruppen, crontab | `useradd`, `usermod`, `encrypt`, `crontab` |
+| Prozesse / Speicher / System | Prozessliste mit Signalen, Dateisysteme, Disklabels, sysctl lesen/setzen, Neustart/Ausschalten | `ps`, `kill`, `disklabel`, `sysctl`, `shutdown` |
+| VM-Netze | Portgruppen auf veb mit optionalem Uplink oder VLAN und vport-Gateway; NAT, DHCP-Bereich, DNS-Domain, pf zwischen VMs (`link1`), `locked lladdr`; Anschlüsse je VM mit fester MAC und fester oder dynamischer Adresse; automatische DHCP-Reservierungen und DNS-Einträge (A + PTR); Firewall je VM (Grundregel ein/aus, Regeln mit Port, Netz, `<tabelle>` oder VM als Gegenstelle); Vorschau der erzeugten Dateien | `veb(4)`, `vlan(4)`, `vport(4)`, `vm.conf`, `dhcpd`, `unbound`, pf-Anker `maar` |
+| Netzwerk | Schnittstellen mit Adressen, veb-Mitgliedern und Status, up/down, netstart, hostname.if aus Vorlagen (DHCP, statisch, veb, vport, VLAN, WireGuard), Routen, Resolver | `ifconfig`, `netstat -rn`, `/etc/netstart` |
+| Paketfilter | Status, Regeln, Tabellen (Adressen hinzufügen/entfernen), States, Regelsatz laden, pf an/aus | `pfctl` |
+| Konfiguration | 24 freigegebene Dateien + alle `/etc/hostname.*`; Syntaxprüfung vor dem Speichern, Sicherung, Konflikterkennung, „Übernehmen“-Aktion | `pfctl -nf`, `vmd -n`, `httpd -n`, `doas -C`, `sshd -t`, … |
+| Protokolle | `/var/log/*` lesen, filtern, live verfolgen | Server-Sent Events |
+
+Lang laufende Befehle (Pakete, Patches, Upgrades, ISO-Downloads) laufen als **Aufgaben** im
+Hintergrund; ihre Ausgabe erscheint live in der Aufgabenleiste oben rechts.
+
+## Templates und Gastanpassung
+
+Templates liegen als schreibgeschützte qcow2-Images mit JSON-Beschreibung unter `<vmdir>/templates`.
+Eine Bereitstellung legt die Disk an (`vmctl create -b` für verknüpfte Klone, `-i` für Vollkopien),
+erzeugt bei Bedarf eine Seed-ISO unter `<vmdir>/seed/<vm>-cidata.iso`, trägt die VM in `vm.conf` ein
+und startet sie. Welche VMs auf einem Template aufbauen, liest maar direkt aus dem qcow2-Header.
+
+- **Linux-Gäste:** Cloud-Images mit cloud-init werten die Seed-ISO automatisch aus
+  (`meta-data`, `user-data`, `network-config` v2).
+- **OpenBSD-Gäste:** Im Template einmalig [`maar-guest`](web/guest/maar-guest.sh) installieren
+  (die Templates-Seite zeigt die drei Befehle). Das Skript läuft aus `/etc/rc.local`, wertet
+  `maar.cfg` nur bei neuer Instanz-ID aus und erhält das Passwort ausschließlich als bcrypt-Hash.
+
+Klone einer laufenden VM sind nicht möglich, VM-Klone sind immer Vollkopien: Ein Overlay auf eine
+Disk, die weiter beschrieben wird, würde beschädigt.
+
+## Snapshots
+
+Snapshots liegen unter `<vmdir>/snapshots/<vm>/<id>/diskN.qcow2` (schreibgeschützt) mit `meta.json`.
+Beim Anlegen wird die aktive Disk dorthin verschoben und durch ein leeres Overlay ersetzt – der Pfad
+in `vm.conf` bleibt gleich, die Dauer ist unabhängig von der Diskgröße. Die Baumstruktur liest maar
+aus den qcow2-Headern, nicht aus einer eigenen Datenbank.
+
+| Vorgang | Ohne qemu-img | Mit qemu-img |
+|---|---|---|
+| Anlegen, Zurücksetzen, Umbenennen | ✓ | ✓ |
+| Blatt löschen (Snapshot ohne Nachfolger) | ✓ | ✓ |
+| Snapshot mit Nachfolgern zusammenführen | – | ✓ (`qemu-img rebase`) |
+| Alle konsolidieren | ✓, Disk wird eigenständig (`vmctl create -i`) | ✓, Template-Basis bleibt |
+
+Alle Vorgänge verlangen eine gestoppte VM. Live-Snapshots kann vmd nicht.
+
+## Backup
+
+Eine Sicherung liegt auf dem Ziel unter `<vm>/<JJJJMMTT-hhmmss>/` als `manifest.json` (mit dem
+`vm.conf`-Block) und `diskN.qcow2`. Die Disks sind vollständig zusammengeführte, eigenständige
+qcow2-Images (`vmctl create -i`) – sie lassen sich ohne Template, Snapshots oder maar einsetzen.
+
+| Modus (laufende VM) | Ablauf | Ausfall |
+|---|---|---|
+| **Snapshot** (empfohlen) | herunterfahren → Disks als Snapshot `maar-backup` einfrieren → starten → aus dem Snapshot sichern; der vorige Backup-Snapshot wird im selben Stopp zusammengeführt | Herunterfahren + Booten |
+| Offline | herunterfahren → sichern → starten | gesamte Kopierdauer |
+| Pause | pausieren → sichern → fortsetzen (absturzkonsistent) | keine Neustarts, VM steht während der Kopie |
+
+Der Snapshot-Modus braucht `qemu-img` und qcow2-Disks, sonst sichert maar offline und vermerkt das
+im Protokoll.
+
+- **Ziele:** lokal (eigene Platte empfohlen; Systemverzeichnisse und das VM-Verzeichnis sind gesperrt),
+  NFS (wird pro Lauf unter `/var/maar/mnt/<ziel>` eingebunden), SFTP (eigener Schlüssel
+  `/var/maar/backup_ed25519`, die Oberfläche zeigt den öffentlichen Teil; Zwischenablage unter
+  `<vmdir>/.backup-staging`).
+- **Zeitpläne** laufen im maar-Dienst. Verpasste Termine (Dienst war aus) werden einmal nachgeholt.
+  Konfiguration und Verlauf: `/var/maar/backup.json`.
+- **Wiederherstellen:** als neue, beim Systemstart deaktivierte VM (standardmäßig ohne Netz, um
+  IP-Konflikte mit dem Original zu vermeiden) oder über die gestoppte VM – vorher sichert maar
+  deren aktuellen Zustand als Snapshot.
+
+## Leistung & Alarme
+
+maar misst alle 10 Sekunden mit leichtgewichtigen Zählern (kein `top`): CPU aus `kern.cp_time`,
+aktiven Speicher aus `vmstat -s`, Netz aus `netstat -ibn` (physische Schnittstellen bzw. die Taps
+einer VM, erkannt an der Beschreibung `vmN-ifM-name`) und CPU/RSS der vmd-Prozesse aus `ps`. Dazu
+minütlich Dateisystembelegung und ausgefallene Dienste. Die Zeitreihen liegen im Speicher und werden
+alle 5 Minuten nach `/var/maar/metrics.json.gz` gesichert.
+
+- **Regeln** vergleichen einen Messwert (mit `*` für „jede VM“ bzw. „jedes Dateisystem“) mit einem
+  Schwellwert; ausgelöst wird erst, wenn die Bedingung die Mindestdauer lang ununterbrochen gilt.
+  Voreingestellt: Host-CPU und -Speicher > 90 % für 5 min, Dateisystem > 90 %, VM-CPU > 95 % für 15 min.
+- **Ereignisse:** Dienst ausgefallen (`rcctl ls failed`), VM unerwartet gestoppt (Stopps über maar
+  und Sicherungen zählen nicht), Sicherung fehlgeschlagen.
+- **Mail** geht über `mail(1)` an den lokalen smtpd – lokale Konten wie `root` oder Adressen, sofern
+  smtpd weiterleiten darf. Gleiche Meldungen höchstens alle 30 Minuten. Konfiguration und Verlauf:
+  `/var/maar/alerts.json`.
+- Disk-I/O je VM stellt vmd nicht bereit und fehlt deshalb.
+
+## VM-Netze
+
+Die Absicht steht in `/var/maar/network.json`, alles andere wird daraus erzeugt (mit Prüfung und Sicherung wie im Konfigurationseditor):
+
+| Erzeugt | Inhalt |
+|---|---|
+| `/etc/hostname.vebN`, `.vportN`, `.vlanN` | Switch mit Mitgliedern, Gateway-Adresse, VLAN auf dem Uplink |
+| `/etc/vm.conf` | `switch "<name>" { interface vebN; group "<name>_vm"; locked lladdr }`, Anschlüsse der VMs mit `lladdr` |
+| `/etc/dhcpd.conf` | eigener Bereich zwischen `# >>> maar` und `# <<< maar`; `dhcpd_flags` um die vports ergänzt |
+| `/var/unbound/etc/maar.conf` | `interface`, `access-control`, `local-zone`, A- und PTR-Einträge; per `include:` eingebunden |
+| `/etc/pf.maar.conf` | Anker `maar` (NAT, DHCP/DNS zum Gateway, Regeln je VM als `quick` ohne Richtung); `anchor` + `load anchor` am Ende von pf.conf |
+
+Bestehende Switches aus vm.conf werden als „vorgefunden“ übernommen; erst beim Speichern schreibt maar ihre Dateien. Ungetaggte Uplinks dürfen keine eigene IP haben. Deklariert dhcpd.conf ein Subnetz schon außerhalb des maar-Bereichs, bricht der Abgleich mit einem Hinweis ab. Ungeprüft auf echter Hardware: pf mit `link1` auf veb-Ports, Interface-Gruppen über `group` in vm.conf, unbound mit zusätzlichen `interface`-Zeilen.
+
+## Ausprobieren ohne OpenBSD
+
+```bash
+make demo
+```
+
+Öffnet einen simulierten Host auf <http://127.0.0.1:9443> (Anmeldung `demo` / `demo`). Alle Seiten
+funktionieren mit realistischen OpenBSD-Ausgaben, Konfigurationsdateien liegen in einer temporären
+Sandbox. Die VM-Konsolen sind simuliert; die „Host-Shell“ öffnet im Demo-Modus eine echte lokale
+Shell – deshalb lauscht der Demo-Modus ausschließlich auf localhost.
+
+## Installation auf OpenBSD
+
+Entweder auf dem Mac/Linux cross-kompilieren:
+
+```bash
+make openbsd
+```
+
+```bash
+scp build/maard-openbsd-amd64 root@host:/usr/local/sbin/maard
+```
+
+```bash
+scp etc/rc.d/maard root@host:/etc/rc.d/maard
+```
+
+oder direkt auf dem Host bauen (`pkg_add go`, dann im Quellverzeichnis `make install`).
+
+Auf dem Host als root:
+
+```sh
+chmod 0555 /usr/local/sbin/maard /etc/rc.d/maard
+install -d -m 0700 /var/maar/backups
+rcctl enable maard
+rcctl set maard flags -listen 192.168.50.10:9443
+rcctl start maard
+```
+
+Beim ersten Start wird ein selbst signiertes Zertifikat unter `/etc/ssl/maar.crt` bzw.
+`/etc/ssl/private/maar.key` erzeugt. Ein eigenes Zertifikat (z. B. von `acme-client`) mit
+`-cert` und `-key` angeben.
+
+Anmelden können sich alle Konten der Gruppe `wheel` mit ihrem Systempasswort (BSD Auth,
+`login_passwd`). Andere Gruppe: `-group gruppe`.
+
+### Optionen
+
+| Flag | Standard | Bedeutung |
+|---|---|---|
+| `-listen` | `:9443` | Adresse und Port |
+| `-cert`, `-key` | `/etc/ssl/maar.crt`, `/etc/ssl/private/maar.key` | TLS; fehlende Dateien werden selbst signiert erzeugt |
+| `-plain-http` | aus | ohne TLS, nur hinter `relayd` auf `127.0.0.1` sinnvoll |
+| `-group` | `wheel` | Gruppe mit Anmelderecht |
+| `-vmdir` | `/var/vmd` | Disk-Images; ISOs in `<vmdir>/iso` |
+| `-no-pledge` | aus | `pledge(2)` abschalten (zur Fehlersuche) |
+| `-demo` | aus | simulierter Host |
+
+### pf
+
+Den Zugang auf das Verwaltungsnetz beschränken, z. B.:
+
+```
+table <admin> const { 192.168.50.0/24 }
+pass in on egress proto tcp from <admin> to (egress) port 9443
+```
+
+## Sicherheit
+
+- Läuft als root (Systemverwaltung und BSD Auth brauchen das) und schränkt sich nach dem Start mit
+  `pledge(2)` ein. Gestartete Werkzeuge laufen ohne zusätzliche Einschränkung.
+- Alle Systemaufrufe gehen über Argumentlisten (`exec`), **nie über eine Shell**; jeder Name, Pfad
+  und jede Größe wird vorher gegen eine Positivliste geprüft. Dateipfade für Disk-Images und ISOs
+  müssen unter `-vmdir` liegen, Konfigurationsdateien müssen freigegeben sein.
+- Sitzungen: zufälliges 256-Bit-Token im Cookie (`HttpOnly`, `Secure`, `SameSite=Strict`),
+  30 Minuten Leerlauf, maximal 12 Stunden. Jede schreibende Anfrage verlangt zusätzlich ein
+  CSRF-Token im Header. WebSockets prüfen den Origin.
+- Anmeldung: 5 Fehlversuche je Quelladresse in 5 Minuten, danach Sperre.
+- Strenge Content-Security-Policy (`script-src 'self'`), keine Inline-Skripte, Ausgaben des Systems
+  werden nur als Text ins DOM gesetzt.
+- Jede verändernde Aktion wird mit Benutzer und Quelladresse über syslog (`daemon.info`,
+  Tag `maar`) protokolliert.
+- Gefährliche Aktionen (VM löschen, pf aus, Neustart, Snapshot-Upgrade) verlangen das Abtippen eines
+  Bestätigungsworts; Aktionen, die den eigenen Zugang kappen könnten (sshd stoppen, Uplink down),
+  warnen ausdrücklich.
+- Die Host-Shell läuft als angemeldeter Benutzer (`su -l`), nicht als root.
+
+## Aufbau
+
+```
+cmd/maard/        Einstieg, TLS, pledge
+internal/obsd/      alle Systemzugriffe und Parser (+ Demo-Simulation, Tests)
+internal/auth/      BSD Auth, Sitzungen, CSRF, Login-Drosselung
+internal/console/   geteilte VM-Konsolen (TTY roh, 115200 Baud), PTY-Shell
+internal/jobs/      Hintergrundaufgaben mit Live-Ausgabe
+internal/server/    HTTP-API, WebSockets, SSE
+web/                Oberfläche im CTW Design System 2027 (ohne Build-Schritt)
+etc/rc.d/maard    rc.d-Skript
+```
+
+Tests: `make test` (vet für macOS und OpenBSD, Unit- und Integrationstests mit Race-Detector).
+
+## Grenzen dieser Version
+
+- Getestet wurde gegen nachgebildete Ausgaben von OpenBSD 8.0 und per Cross-Kompilierung;
+  ein Lauf auf echter Hardware steht noch aus. Erste Prüfpunkte dort: Anmeldung über
+  `login_passwd`, `pledge`-Promises, Öffnen des VM-TTYs.
+- Keine Partitionierung (`disklabel -E`, `newfs`) per Klick – dafür ist die Host-Shell da.
+- Sitzungen liegen im Speicher; ein Neustart des Dienstes meldet alle ab.

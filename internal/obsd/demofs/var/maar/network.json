@@ -1,0 +1,26 @@
+{
+  "portGroups": [
+    {"name": "intern", "description": "Server-Netz", "bridge": "veb0", "uplink": "", "vlan": 0,
+     "gateway": "10.0.0.1/24", "vport": "vport0", "nat": true,
+     "dhcp": true, "rangeFrom": "10.0.0.100", "rangeTo": "10.0.0.199",
+     "dns": true, "domain": "vm.ctw.lan", "filter": true, "locked": true, "managed": true}
+  ],
+  "leases": [
+    {"vm": "web01", "lladdr": "fe:e1:ba:d0:12:01", "ip": "10.0.0.11", "hostname": "web01"},
+    {"vm": "db01", "lladdr": "fe:e1:ba:d0:12:02", "ip": "10.0.0.12", "hostname": "db01"}
+  ],
+  "rules": {
+    "web01": [
+      {"dir": "in", "action": "pass", "proto": "tcp", "peer": "any", "port": "80,443", "log": false, "description": "Web"},
+      {"dir": "in", "action": "pass", "proto": "tcp", "peer": "192.168.50.0/24", "port": "22", "log": false, "description": "SSH aus dem LAN"}
+    ],
+    "db01": [
+      {"dir": "in", "action": "pass", "proto": "tcp", "peer": "web01", "port": "5432", "log": false, "description": "PostgreSQL von web01"},
+      {"dir": "in", "action": "pass", "proto": "tcp", "peer": "192.168.50.0/24", "port": "22", "log": false, "description": "SSH aus dem LAN"}
+    ]
+  },
+  "policies": {
+    "web01": {"in": "deny", "out": "allow"},
+    "db01": {"in": "deny", "out": "deny"}
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "maar-demo",
+      "runtimeExecutable": "go",
+      "runtimeArgs": ["run", "./cmd/maard", "-demo", "-listen", "127.0.0.1:9443", "-webdir", "web"],
+      "port": 9443
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+inet 10.0.0.1 255.255.255.0
+description "VM-Gateway"
+up
