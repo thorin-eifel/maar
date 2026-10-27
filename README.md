@@ -29,6 +29,7 @@ Auf dem Host wird außer dem Basissystem nichts benötigt.
 | Konfiguration | 24 freigegebene Dateien + alle `/etc/hostname.*`; Syntaxprüfung vor dem Speichern, Sicherung, Konflikterkennung, „Übernehmen“-Aktion | `pfctl -nf`, `vmd -n`, `httpd -n`, `doas -C`, `sshd -t`, … |
 | Ereignisse & Rollen | Ereignisprotokoll (Anmeldungen, Aktionen, Ablehnungen; filterbar, die letzten 2000 bleiben erhalten); Rollen Administrator, Operator, Betrachter mit Eingrenzung auf bestimmte VMs | `/var/maar/access.json`, `/var/maar/events.jsonl` |
 | Hosts | mehrere maard-Instanzen in einer Übersicht: Status, CPU, Speicher, VMs, Meldungen, Ereignisse aller Hosts; Detailseite mit Verlauf; „Öffnen“ führt zur lokalen Oberfläche des Hosts | API-Token (nur lesen), Zertifikat-Fingerabdruck |
+| Geteilter Speicher | iSCSI-Ziele (anlegen, ändern, aktivieren, löschen, Sitzungsstatus), Fibre-Channel-HBAs mit WWPN, alle SAN-Disks mit Transport, Hersteller, WWN und Verwendung; Datastores (FFS) unter `/var/vmd/<name>`: anlegen, ein-/aushängen, entfernen; Disk-Images direkt in einem Datastore anlegen; NVMe-oF als ausdrücklicher Hinweis | `iscsid`, `iscsictl`, `dmesg`, `fdisk`, `disklabel`, `newfs`, `mount`, `/etc/iscsi.conf`, `/etc/fstab` |
 | Protokolle | `/var/log/*` lesen, filtern, live verfolgen | Server-Sent Events |
 
 Lang laufende Befehle (Pakete, Patches, Upgrades, ISO-Downloads) laufen als **Aufgaben** im
@@ -145,6 +146,20 @@ Jeder Host betreibt sein eigenes `maard` und wird lokal verwaltet. Ein beliebige
 Token dürfen nur `GET /api/federation/summary` und die Messwerte lesen (alles andere: 403) und zählen bei Fehlversuchen in die Anmeldesperre. Peers werden nur über https angesprochen (http nur auf Loopback), ohne Zugangsdaten in der URL. Die Zentrale speichert die Peer-Token in `/var/maar/peers.json` (0600) und zeigt sie nie wieder an. Abfragen laufen parallel mit 6 s Zeitlimit und 10 s Zwischenspeicher; ein ausgefallener Peer stört die übrigen nicht. Verwaltungsaktionen (VMs starten, Rollen, Konfiguration) gibt es über die Zentrale bewusst nicht – dafür ist jeder Host selbst zuständig.
 
 In der Demo gibt es zwei simulierte Peers (einer erreichbar, einer aus).
+
+## Geteilter Speicher
+
+| Transport | Stand unter OpenBSD 8.0 | Was maar tut |
+|---|---|---|
+| iSCSI | Initiator `iscsid(8)`, gesteuert mit `iscsictl(8)` | Ziele als Block `# >>> maar` in `/etc/iscsi.conf` (Syntaxprüfung mit `iscsid -nf`), iscsid aktivieren und starten, `iscsictl reload`; von Hand eingetragene Ziele bleiben unangetastet |
+| Fibre Channel | HBA-Treiber `qla`, `qlw`, `qle`; LUNs erscheinen als `sd`-Geräte | zeigt HBAs, WWPN (für Zoning und LUN-Masking) und die LUNs je HBA; eine Konfiguration auf dem Host gibt es nicht |
+| NVMe over Fabrics | **nicht vorhanden** – `nvme(4)` bedient nur lokale PCIe-Laufwerke | zeigt das offen als Hinweis, statt etwas vorzutäuschen |
+
+**Datastores:** Eine freie SAN-Disk wird mit GPT, Label und FFS initialisiert und unter `/var/vmd/<name>` eingehängt (fstab-Eintrag mit `noauto`, markiert mit `# maar datastore <name>`). VM-Disks dürfen dort liegen: Beim Anlegen eines Disk-Images wählst du den Speicherort, vorhandene Images eines eingehängten Datastores erscheinen in der VM-Übersicht.
+
+Sicherungen gegen Datenverlust: Initialisiert werden nur Disks mit Transport iSCSI, FC oder Multipath – lokale Disks, die Systemdisk, eingehängte Disks und Disks in `/etc/fstab` nie. Eine Disk mit vorhandenem Label wird gesondert gewarnt, und die Bestätigung verlangt den Gerätenamen. Ein Datastore lässt sich nicht aushängen, solange VMs darauf laufen, und nicht entfernen, solange VMs seine Images verwenden (die Daten bleiben beim Entfernen erhalten). Ein iSCSI-Ziel lässt sich nicht löschen, solange ein Datastore auf einer iSCSI-Disk eingehängt ist.
+
+Grenzen: FFS ist kein Cluster-Dateisystem – ein Datastore darf immer nur auf **einem** Host eingehängt sein; bei mehreren Hosts braucht jeder eigene LUNs (VM-Migration zwischen Hosts gibt es daher noch nicht). Datastores stehen nach einem Neustart ausgehängt da, weil iSCSI beim Booten noch fehlt. CHAP wird noch nicht gesetzt (die Syntax ist in `iscsi.conf(5)` nicht belegt und wird nicht geraten). Multipath: OpenBSD zeigt mehrere Pfade als getrennte Geräte; `mpath(4)` arbeitet nur mit bestimmten Arrays. Das Auslesen von `dmesg` (Gerätezeilen, WWPN) und das Format von `iscsictl show summary` sind nur in der Demo geprüft.
 
 ## Ausprobieren ohne OpenBSD
 

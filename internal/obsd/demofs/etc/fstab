@@ -1,0 +1,6 @@
+2a7c1f9e0b3d4c55.a / ffs rw 1 1
+2a7c1f9e0b3d4c55.k /home ffs rw,nodev,nosuid 1 2
+2a7c1f9e0b3d4c55.d /tmp ffs rw,nodev,nosuid 1 2
+9e41c07a2bd31f80.a /var/vmd ffs rw,nodev,nosuid,softdep 1 2
+# maar datastore vm-pool
+c0ffee00deadbeef.a /var/vmd/vm-pool ffs rw,noauto,nodev,nosuid,noatime 0 0

@@ -137,6 +137,14 @@ func (s *Server) Handler() http.Handler {
 	api("GET /api/network", s.network)
 	api("POST /api/network/{iface}/{action}", s.ifaceAction)
 
+	api("GET /api/san", s.san)
+	api("POST /api/san/iscsi", s.saveISCSI)
+	api("PUT /api/san/iscsi/{name}", s.saveISCSI)
+	api("DELETE /api/san/iscsi/{name}", s.deleteISCSI)
+	api("POST /api/san/datastores", s.initDatastore)
+	api("POST /api/san/datastores/{name}/{action}", s.datastoreAction)
+	api("DELETE /api/san/datastores/{name}", s.removeDatastore)
+
 	api("GET /api/vnet", s.vnet)
 	api("GET /api/vnet/preview", s.vnetPreview)
 	api("POST /api/vnet/sync", s.syncVNet)

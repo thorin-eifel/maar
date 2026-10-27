@@ -32,6 +32,7 @@ var configSpecs = []ConfigSpec{
 	{Path: "/etc/rc.local", Label: "Lokales Startskript", Group: "System", Mode: 0o644},
 	{Path: "/etc/installurl", Label: "Paket-Spiegel", Group: "System", Mode: 0o644},
 	{Path: "/etc/syslog.conf", Label: "Syslog", Group: "System", Apply: []string{"rcctl", "reload", "syslogd"}, ApplyTxt: "syslogd neu laden", Mode: 0o644},
+	{Path: "/etc/iscsi.conf", Label: "iSCSI-Initiator", Group: "Virtualisierung", Check: []string{"iscsid", "-nf", "{}"}, Apply: []string{"iscsictl", "reload"}, ApplyTxt: "iscsictl reload", Mode: 0o600},
 	{Path: "/etc/vm.conf", Label: "Virtuelle Maschinen", Group: "Virtualisierung", Check: []string{"vmd", "-n", "-f", "{}"}, Apply: []string{"vmctl", "reload"}, ApplyTxt: "vmctl reload", Mode: 0o644},
 	{Path: "/etc/pf.conf", Label: "Paketfilter", Group: "Netzwerk", Check: []string{"pfctl", "-nf", "{}"}, Apply: []string{"pfctl", "-f", "/etc/pf.conf"}, ApplyTxt: "Regelsatz laden", Mode: 0o600},
 	{Path: "/etc/pf.maar.conf", Label: "VM-Firewall (erzeugt)", Group: "Netzwerk", Check: []string{"pfctl", "-nf", "{}"}, Apply: []string{"pfctl", "-a", "maar", "-f", "/etc/pf.maar.conf"}, ApplyTxt: "Anker laden", Mode: 0o600},

@@ -26,6 +26,7 @@ type Host struct {
 	snapMu   sync.Mutex // serialisiert Snapshot-Vorgänge
 	backupMu sync.Mutex // schützt backup.json
 	netMu    sync.Mutex // schützt network.json und die daraus erzeugten Dateien
+	sanMu    sync.Mutex // schützt san.json, iscsi.conf und Datastores
 
 	hookMu   sync.Mutex
 	onEvent  func(kind, subject, message string)

@@ -182,11 +182,12 @@ export default {
       const name = h('input', { required: true, pattern: '[A-Za-z0-9][A-Za-z0-9._\\-]{0,63}', autocomplete: 'off' });
       const size = h('input', { value: '20G', required: true, pattern: '[0-9]{1,6}[KMGT]?' });
       const fmt = h('select', null, h('option', { value: 'qcow2' }, 'qcow2'), h('option', { value: 'raw' }, 'raw'));
+      const store = h('select', null, h('option', { value: '' }, `lokal (${data.overview.vmDir})`), (data.overview.datastores || []).map(s => h('option', { value: s }, `Datastore ${s}`)));
       const base = h('select', null, h('option', { value: '' }, '– keines –'), data.overview.images.filter(i => i.name.endsWith('.qcow2')).map(i => h('option', { value: i.path }, i.name)));
       formDialog({
         title: 'Disk-Image anlegen', meta: 'VMCTL CREATE', submit: 'Anlegen',
-        fields: [field('Dateiname', name, `wird unter ${data.overview.vmDir} angelegt`), field('Größe', size), field('Format', fmt), field('Basis-Image', base, 'Overlay auf ein bestehendes qcow2 (Größe wird übernommen)')],
-        onSubmit: async () => { const r = await post('/api/vm-disks', { name: name.value.trim(), size: size.value.trim(), format: fmt.value, base: base.value }); toast(r.message); await load(); },
+        fields: [field('Dateiname', name), field('Speicherort', store, 'Datastores kommen aus „Geteilter Speicher“.'), field('Größe', size), field('Format', fmt), field('Basis-Image', base, 'Overlay auf ein bestehendes qcow2 (Größe wird übernommen)')],
+        onSubmit: async () => { const r = await post('/api/vm-disks', { name: name.value.trim(), size: size.value.trim(), format: fmt.value, base: base.value, store: store.value }); toast(r.message); await load(); },
       });
     }
 

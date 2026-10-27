@@ -214,12 +214,12 @@ func (s *Server) vmAction(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) createDisk(w http.ResponseWriter, r *http.Request) {
-	var req struct{ Name, Size, Format, Base string }
+	var req struct{ Name, Size, Format, Base, Store string }
 	if !decode(w, r, &req) {
 		return
 	}
-	err := s.Host.CreateDisk(r.Context(), req.Name, req.Size, req.Format, req.Base)
-	s.audit(r, err, "vm disk create %s size=%s base=%s", req.Name, req.Size, req.Base)
+	err := s.Host.CreateDisk(r.Context(), req.Name, req.Size, req.Format, req.Base, req.Store)
+	s.audit(r, err, "vm disk create %s size=%s base=%s store=%s", req.Name, req.Size, req.Base, req.Store)
 	respond(w, msg{Message: "Disk-Image angelegt."}, err)
 }
 

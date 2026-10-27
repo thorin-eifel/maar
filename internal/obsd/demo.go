@@ -38,6 +38,9 @@ type DemoRunner struct {
 	pkgs    map[string]string
 	patches []string
 	tables  map[string][]string
+	sanDuid map[string]string // SAN-Disk → DUID (nach disklabel)
+	sanMnt  map[string]string // Gerät → Einhängepunkt der Datastores
+	sanSeq  int
 	ifs     map[string]string // per netstart erzeugte oder zerstörte Interfaces ("" = zerstört)
 
 	// Zähler für Leistungsdaten
@@ -119,8 +122,11 @@ func NewDemo() (*DemoRunner, string, error) {
 		pkgs:    map[string]string{},
 		patches: []string{"078_xserver", "079_libssl"},
 		ifs:     map[string]string{},
+		sanDuid: map[string]string{"sd2": "c0ffee00deadbeef"},
+		sanMnt:  map[string]string{"/dev/sd2a": "/var/vmd/vm-pool"},
 		tables:  map[string][]string{"bruteforce": {"185.220.101.4", "45.95.147.231"}, "lan": {"10.0.0.0/24", "192.168.50.0/24"}},
 	}
+	d.on["iscsid"], d.started["iscsid"] = true, true
 	for _, s := range []string{"pf", "library_aslr", "check_quotas", "cron", "dhcpd", "httpd", "ntpd", "pflogd", "slaacd", "smtpd", "sndiod", "sshd", "syslogd", "unbound", "vmd", "dhcpleased", "resolvd"} {
 		d.on[s] = true
 	}
@@ -173,14 +179,26 @@ func (d *DemoRunner) Run(ctx context.Context, stdin []byte, name string, args ..
 		}
 		return ok(demoRoutes)
 	case "df":
-		return ok(demoDf)
+		return ok(demoDf + d.sanDf())
 	case "mount":
 		if len(args) > 0 {
-			return ok("") // NFS einbinden: Daten liegen in der Sandbox
+			return d.sanMount(args[0])
 		}
-		return ok(demoMount)
+		return ok(demoMount + d.sanMountLines())
+	case "dmesg":
+		return ok(demoDmesg)
+	case "fdisk", "newfs":
+		if name == "fdisk" && !d.sanDisk(val(args, len(args)-1)) || name == "newfs" && !d.sanDisk(strings.TrimSuffix(val(args, len(args)-1), "a")) {
+			return fail(name, name+": "+val(args, len(args)-1)+": No such file or directory\n", 1)
+		}
+		return ok("")
+	case "iscsictl":
+		if val(args, 0) == "show" {
+			return ok(d.iscsiSummary())
+		}
+		return ok("")
 	case "disklabel":
-		return ok(strings.ReplaceAll(demoDisklabel, "sd0", val(args, len(args)-1)))
+		return d.disklabel(args, stdin)
 	case "ifconfig":
 		if a == "-A" || a == "" {
 			return ok(d.ifconfig())
@@ -192,7 +210,7 @@ func (d *DemoRunner) Run(ctx context.Context, stdin []byte, name string, args ..
 
 	case "vmctl":
 		return d.vmctl(args)
-	case "vmd", "pfctl", "httpd", "relayd", "smtpd", "doas", "sshd", "ntpd", "unbound-checkconf", "dhcpd", "iked", "bgpd", "acme-client":
+	case "vmd", "pfctl", "httpd", "relayd", "smtpd", "doas", "sshd", "ntpd", "unbound-checkconf", "dhcpd", "iked", "bgpd", "acme-client", "iscsid":
 		if name == "pfctl" && !strings.HasPrefix(a, "-n") {
 			return d.pfctl(args)
 		}
@@ -224,6 +242,11 @@ func (d *DemoRunner) Run(ctx context.Context, stdin []byte, name string, args ..
 	case "kill", "shutdown", "pkill":
 		return ok("")
 	case "umount":
+		for dev, mp := range d.sanMnt {
+			if mp == val(args, 0) {
+				delete(d.sanMnt, dev)
+			}
+		}
 		return ok("")
 	case "mail":
 		// mail -s betreff empfänger… – in der Sandbox an /var/mail/<empfänger> anhängen
@@ -349,7 +372,7 @@ func (d *DemoRunner) sysctl(args []string) (Result, error) {
 		"hw.machine": "amd64", "hw.model": "AMD Ryzen 7 7840HS w/ Radeon 780M Graphics", "hw.ncpuonline": "8",
 		"hw.physmem": "34163654656", "kern.boottime": fmt.Sprint(d.boot.Unix()),
 		"kern.version": "OpenBSD 8.0 (GENERIC.MP) #54: Sun Oct 12 21:13:46 MDT 2026\n    deraadt@amd64.openbsd.org:/usr/src/sys/arch/amd64/compile/GENERIC.MP\n",
-		"hw.disknames": "sd0:2a7c1f9e0b3d4c55,sd1:9e41c07a2bd31f80,cd0:",
+		"hw.disknames": d.disknames(),
 	}
 	if len(args) > 0 && args[0] == "-a" {
 		keys := make([]string, 0, len(vals))
@@ -563,7 +586,7 @@ func (d *DemoRunner) pfctl(args []string) (Result, error) {
 }
 
 func (d *DemoRunner) rcctl(args []string) (Result, error) {
-	all := []string{"accounting", "amd", "apmd", "bgpd", "bootparamd", "check_quotas", "cron", "dhcp6leased", "dhcpd", "dhcpleased", "dhcrelay", "dvmrpd", "eigrpd", "ftpd", "ftpproxy", "hostapd", "hotplugd", "httpd", "identd", "ifstated", "iked", "inetd", "ipsec", "isakmpd", "ldapd", "ldattach", "ldpd", "library_aslr", "lockd", "lpd", "mopd", "mountd", "mrouted", "multicast", "nfsd", "npppd", "ntpd", "ospf6d", "ospfd", "pf", "pflogd", "portmap", "rad", "radiusd", "rarpd", "rbootd", "relayd", "resolvd", "ripd", "route6d", "sasyncd", "sensorsd", "slaacd", "slowcgi", "smtpd", "sndiod", "snmpd", "spamd", "spamd_black", "spamlogd", "sshd", "statd", "switchd", "syslogd", "tftpd", "tftpproxy", "unbound", "unwind", "vmd", "watchdogd", "wsmoused", "xenodm", "ypbind", "ypldap", "yppasswdd", "ypserv"}
+	all := []string{"iscsid", "accounting", "amd", "apmd", "bgpd", "bootparamd", "check_quotas", "cron", "dhcp6leased", "dhcpd", "dhcpleased", "dhcrelay", "dvmrpd", "eigrpd", "ftpd", "ftpproxy", "hostapd", "hotplugd", "httpd", "identd", "ifstated", "iked", "inetd", "ipsec", "isakmpd", "ldapd", "ldattach", "ldpd", "library_aslr", "lockd", "lpd", "mopd", "mountd", "mrouted", "multicast", "nfsd", "npppd", "ntpd", "ospf6d", "ospfd", "pf", "pflogd", "portmap", "rad", "radiusd", "rarpd", "rbootd", "relayd", "resolvd", "ripd", "route6d", "sasyncd", "sensorsd", "slaacd", "slowcgi", "smtpd", "sndiod", "snmpd", "spamd", "spamd_black", "spamlogd", "sshd", "statd", "switchd", "syslogd", "tftpd", "tftpproxy", "unbound", "unwind", "vmd", "watchdogd", "wsmoused", "xenodm", "ypbind", "ypldap", "yppasswdd", "ypserv"}
 	if len(args) < 2 {
 		return fail("rcctl", "usage: rcctl ...", 1)
 	}
@@ -1160,4 +1183,86 @@ func (d *DemoRunner) synthIf(name string) string {
 		fmt.Fprintf(&b, "\t%s flags=3<LEARNING,DISCOVER>\n\t\tport %d ifpriority 0 ifcost 0\n", m, 30+i)
 	}
 	return b.String()
+}
+
+// ---- SAN-Simulation ----
+
+func (d *DemoRunner) sanDisk(n string) bool {
+	return n == "sd2" || n == "sd3" || n == "sd4" || n == "sd5"
+}
+
+func (d *DemoRunner) disknames() string {
+	out := "sd0:2a7c1f9e0b3d4c55,sd1:9e41c07a2bd31f80"
+	for _, n := range []string{"sd2", "sd3", "sd4", "sd5"} {
+		duid := d.sanDuid[n]
+		if duid == "" {
+			duid = "0000000000000000"
+		}
+		out += "," + n + ":" + duid
+	}
+	return out + ",cd0:"
+}
+
+func (d *DemoRunner) disklabel(args []string, stdin []byte) (Result, error) {
+	dev := val(args, len(args)-1)
+	if len(args) > 0 && args[0] == "-E" && d.sanDisk(dev) {
+		if !strings.Contains(string(stdin), "w") {
+			return fail("disklabel", "disklabel: label nicht geschrieben\n", 1)
+		}
+		d.sanSeq++
+		d.sanDuid[dev] = fmt.Sprintf("%016x", uint64(0x5a17c0de00000000)+uint64(d.sanSeq)*0x1111+uint64(dev[2]))
+		return ok("")
+	}
+	if d.sanDisk(dev) {
+		duid := d.sanDuid[dev]
+		if duid == "" {
+			duid = "0000000000000000"
+		}
+		return ok(fmt.Sprintf("# /dev/r%sc:\ntype: SCSI\ndisk: SCSI disk\nlabel: SAN LUN\nduid: %s\nflags:\nbytes/sector: 512\n", dev, duid))
+	}
+	return ok(strings.ReplaceAll(demoDisklabel, "sd0", dev))
+}
+
+// sanMount hängt einen fstab-Eintrag ein (mount /var/vmd/<name>).
+func (d *DemoRunner) sanMount(mp string) (Result, error) {
+	b, _ := os.ReadFile(filepath.Join(d.root, "etc/fstab"))
+	for _, l := range lines(string(b)) {
+		f := strings.Fields(l)
+		if len(f) >= 2 && f[1] == mp && !strings.HasPrefix(l, "#") {
+			duid := strings.SplitN(f[0], ".", 2)
+			for disk, du := range d.sanDuid {
+				if du == duid[0] {
+					d.sanMnt["/dev/"+disk+duid[len(duid)-1]] = mp
+					return ok("")
+				}
+			}
+			return fail("mount", "mount: "+f[0]+": No such device\n", 1)
+		}
+	}
+	return ok("") // NFS u. a.: Daten liegen in der Sandbox
+}
+
+func (d *DemoRunner) sanMountLines() string {
+	var b strings.Builder
+	for dev, mp := range d.sanMnt {
+		fmt.Fprintf(&b, "%s on %s type ffs (local, nodev, nosuid, noatime)\n", dev, mp)
+	}
+	return b.String()
+}
+
+func (d *DemoRunner) sanDf() string {
+	var b strings.Builder
+	for dev, mp := range d.sanMnt {
+		fmt.Fprintf(&b, "%s  524288000  98765432  425522568   19%%    %s\n", dev, mp)
+	}
+	return b.String()
+}
+
+func (d *DemoRunner) iscsiSummary() string {
+	b, _ := os.ReadFile(filepath.Join(d.root, "etc/iscsi.conf"))
+	var out strings.Builder
+	for _, m := range reTargetSc.FindAllStringSubmatch(string(b), -1) {
+		fmt.Fprintf(&out, "%-20s 10.0.0.50:3260  Session: Logged in (Full Feature Phase)\n", strings.Trim(m[1], `"`))
+	}
+	return out.String()
 }

@@ -33,8 +33,10 @@ type VMOverview struct {
 	VMDOn    bool          `json:"vmdEnabled"`
 	Images   []VMImage     `json:"images"`
 	ISOs     []VMImage     `json:"isos"`
-	VMDir    string        `json:"vmDir"`
-	ConfErr  string        `json:"confError,omitempty"`
+	// Datastores sind eingehängte Datenträger aus geteiltem Speicher, auf denen Images liegen dürfen.
+	Datastores []string `json:"datastores"`
+	VMDir      string   `json:"vmDir"`
+	ConfErr    string   `json:"confError,omitempty"`
 }
 
 type VMImage struct {
@@ -116,6 +118,13 @@ func (h *Host) VMs(ctx context.Context) (*VMOverview, error) {
 		}
 	}
 	ov.Images = h.listImages(h.VMDir, []string{".qcow2", ".img", ".raw"}, used)
+	ov.Datastores = []string{}
+	for _, ds := range h.datastoreMounts() {
+		if h.isMounted(ctx, ds.Mount) {
+			ov.Datastores = append(ov.Datastores, ds.Name)
+			ov.Images = append(ov.Images, h.listImages(ds.Mount, []string{".qcow2", ".img", ".raw"}, used)...)
+		}
+	}
 	ov.ISOs = h.listImages(filepath.Join(h.VMDir, "iso"), []string{".iso", ".img", ".fs"}, used)
 	return ov, nil
 }
@@ -341,14 +350,31 @@ func (h *Host) DeleteVM(ctx context.Context, name string, deleteDisks bool) erro
 	return nil
 }
 
-func (h *Host) CreateDisk(ctx context.Context, name, size, format, base string) error {
+// CreateDisk legt ein Disk-Image im VM-Verzeichnis oder (store) in einem Datastore an.
+func (h *Host) CreateDisk(ctx context.Context, name, size, format, base, store string) error {
 	if err := checkName("Dateiname", name, reName); err != nil {
 		return err
+	}
+	dir := h.VMDir
+	if store != "" {
+		var mp string
+		for _, d := range h.datastoreMounts() {
+			if d.Name == store {
+				mp = d.Mount
+			}
+		}
+		if mp == "" {
+			return invalid("Datastore %q gibt es nicht", store)
+		}
+		if !h.isMounted(ctx, mp) {
+			return invalid("Datastore %q ist nicht eingehängt", store)
+		}
+		dir = mp
 	}
 	if format != "raw" {
 		format = "qcow2"
 	}
-	p := filepath.Join(h.VMDir, strings.TrimSuffix(name, "."+format)+"."+format)
+	p := filepath.Join(dir, strings.TrimSuffix(name, "."+format)+"."+format)
 	args := []string{"create"}
 	if base != "" {
 		if err := h.checkVMPath(base); err != nil {

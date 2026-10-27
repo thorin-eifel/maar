@@ -287,3 +287,26 @@ vm.swapencrypt.enable=1
 hw.perfpolicy=auto
 hw.smt=0
 `
+
+const demoDmesg = `OpenBSD 8.0 (GENERIC.MP) #54: Sun Oct 12 21:13:46 MDT 2026
+nvme0 at pci3 dev 0 function 0 "Samsung PM9A1" rev 0x00: msix, NVMe 1.4
+scsibus1 at nvme0: 2 targets, initiator 0
+sd0 at scsibus1 targ 1 lun 0: <NVMe, Samsung SSD 990 PRO, 4B2Q>
+sd0: 953869MB, 512 bytes/sector, 1953525168 sectors
+sd1 at scsibus1 targ 2 lun 0: <NVMe, Samsung SSD 990 PRO, 4B2Q>
+sd1: 953869MB, 512 bytes/sector, 1953525168 sectors
+qla0 at pci5 dev 0 function 0 "QLogic ISP2532" rev 0x02: msix, firmware 8.7.4
+scsibus2 at qla0: 2048 targets, initiator WWPN 21000024ff4c6a52, target 0
+qla1 at pci5 dev 0 function 1 "QLogic ISP2532" rev 0x02: msix, firmware 8.7.4
+scsibus3 at qla1: 2048 targets, initiator WWPN 21000024ff4c6a53, target 0
+sd4 at scsibus2 targ 1 lun 0: <NETAPP, LUN C-Mode, 9500> naa.600a098038314c4c6b4a5a4d6e575a31
+sd4: 2097152MB, 512 bytes/sector, 4294967296 sectors
+sd5 at scsibus3 targ 1 lun 1: <NETAPP, LUN C-Mode, 9500> naa.600a098038314c4c6b4a5a4d6e575a32
+sd5: 1048576MB, 512 bytes/sector, 2147483648 sectors
+iscsi0 at root
+scsibus4 at iscsi0: 256 targets
+sd2 at scsibus4 targ 1 lun 0: <LIO-ORG, vm-pool, 4.0> naa.60014050f3a1c25e8f0b4d4a9e1c7b02
+sd2: 512000MB, 512 bytes/sector, 1048576000 sectors
+sd3 at scsibus4 targ 2 lun 0: <LIO-ORG, scratch, 4.0> naa.60014057b2d9a0c1e33f4e2b8a6d5f10
+sd3: 204800MB, 512 bytes/sector, 419430400 sectors
+`

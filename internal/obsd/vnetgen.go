@@ -96,13 +96,16 @@ func (st *netState) dhcpdBlock() string {
 	return b.String()
 }
 
-// mergeManaged ersetzt den maar-Bereich in src (oder hängt ihn an).
-func mergeManaged(src, block string) string {
-	region := dhcpBegin + "\n" + strings.TrimLeft(block, "\n") + dhcpEnd + "\n"
-	if i := strings.Index(src, dhcpBegin); i >= 0 {
-		if j := strings.Index(src[i:], dhcpEnd); j >= 0 {
-			end := lineEnd(src, i+j)
-			return src[:i] + region + src[end:]
+// mergeManaged ersetzt den maar-Bereich in dhcpd.conf (oder hängt ihn an).
+func mergeManaged(src, block string) string { return mergeBlock(src, dhcpBegin, dhcpEnd, block) }
+
+// mergeBlock ersetzt den Bereich zwischen begin und end in src (oder hängt ihn an).
+func mergeBlock(src, begin, end, block string) string {
+	region := begin + "\n" + strings.TrimLeft(block, "\n") + end + "\n"
+	if i := strings.Index(src, begin); i >= 0 {
+		if j := strings.Index(src[i:], end); j >= 0 {
+			e := lineEnd(src, i+j)
+			return src[:i] + region + src[e:]
 		}
 	}
 	if strings.TrimSpace(block) == "" {

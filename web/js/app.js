@@ -8,7 +8,7 @@ const NAV = [
   ['Virtualisierung', [['03', 'Virtuelle Maschinen', '#/vms', 'vms'], ['04', 'Templates', '#/templates', 'templates'], ['05', 'Backup', '#/backup', 'backup'], ['06', 'Konsolen', '#/console', 'console']]],
   ['System', [['07', 'Dienste', '#/services', 'services'], ['08', 'Pakete & Updates', '#/packages', 'packages'], ['09', 'Benutzer', '#/users', 'users'], ['10', 'Prozesse', '#/processes', 'processes'], ['11', 'Speicher', '#/storage', 'storage'], ['12', 'System', '#/system', 'system']]],
   ['Netz', [['13', 'VM-Netze', '#/vnet', 'vnet'], ['14', 'Netzwerk', '#/network', 'network'], ['15', 'Paketfilter', '#/firewall', 'firewall']]],
-  ['Werkzeuge', [['16', 'Konfiguration', '#/files', 'files'], ['17', 'Protokolle', '#/logs', 'logs'], ['18', 'Ereignisse & Rollen', '#/access', 'access'], ['19', 'Hosts', '#/hosts', 'hosts']]],
+  ['Werkzeuge', [['16', 'Konfiguration', '#/files', 'files'], ['17', 'Protokolle', '#/logs', 'logs'], ['18', 'Ereignisse & Rollen', '#/access', 'access'], ['19', 'Hosts', '#/hosts', 'hosts'], ['20', 'Geteilter Speicher', '#/san', 'san']]],
 ];
 
 const app = document.getElementById('app');
@@ -100,6 +100,7 @@ const routes = {
   logs: () => import('./views/logs.js'),
   access: () => import('./views/access.js'),
   hosts: () => import('./views/hosts.js'),
+  san: () => import('./views/san.js'),
 };
 
 let routeSeq = 0;
