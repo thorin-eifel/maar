@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestHTTPDForm(t *testing.T) {
@@ -511,5 +512,168 @@ func TestRelaydForm(t *testing.T) {
 	}
 	if after, _ := h.readFile(relaydPath); after != before {
 		t.Error("abgelehnte Eingaben haben relayd.conf verändert")
+	}
+}
+
+func TestInterfaceForm(t *testing.T) {
+	old := ifConfirmWait
+	ifConfirmWait = 1500 * time.Millisecond
+	defer func() { ifConfirmWait = old }()
+	h := newDemoHost(t)
+	ctx := context.Background()
+	v, err := h.Interface(ctx, "em0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := v.Conf
+	if !v.Editable || !v.Egress || c.V4Mode != "dhcp" || c.V6Mode != "auto" || c.Descr != "Uplink" || c.Down || !contains(v.Parents, "em1") || v.Managed != "" {
+		t.Fatalf("Ansicht: %+v %+v", v, c)
+	}
+	if mv, _ := h.Interface(ctx, "veb0"); mv.Editable || mv.Managed == "" {
+		t.Errorf("veb0 bearbeitbar: %+v", mv)
+	}
+	if lv, _ := h.Interface(ctx, "lo0"); lv.Editable {
+		t.Error("lo0 bearbeitbar")
+	}
+	// Vorschau schreibt nichts, Uplink-Warnung
+	orig, _ := h.readFile("/etc/hostname.em0")
+	c.V4Mode, c.V4, c.Gateway = "static", []IfAddr{{Addr: "192.168.50.11", Prefix: 24}, {Addr: "192.168.60.5", Prefix: 24}}, "192.168.50.1"
+	p, err := h.SaveInterface(ctx, &c, true)
+	if err != nil || !strings.Contains(p.Content, "inet 192.168.50.11/24\ninet alias 192.168.60.5/24\ninet6 autoconf\ndescription \"Uplink\"\nup\n") || !strings.Contains(strings.Join(p.Warnings, "|"), "Uplink") {
+		t.Fatalf("Vorschau: %v %+v", err, p)
+	}
+	if now, _ := h.readFile("/etc/hostname.em0"); now != orig {
+		t.Fatal("Vorschau hat geschrieben")
+	}
+	// Anwenden, nicht bestätigen: automatische Rücknahme
+	res, err := h.SaveInterface(ctx, &c, false)
+	if err != nil || res.Pending == 0 {
+		t.Fatalf("Anwenden: %v %+v", err, res)
+	}
+	if _, err := h.SaveInterface(ctx, &c, false); err == nil {
+		t.Error("zweite Änderung trotz ausstehender Bestätigung")
+	}
+	if fv, _ := h.Interface(ctx, "em0"); fv.Pending == nil || fv.Conf.V4Mode != "static" {
+		t.Errorf("ausstehend: %+v", fv)
+	}
+	if gw, _ := h.readFile("/etc/mygate"); strings.TrimSpace(gw) != "192.168.50.1" {
+		t.Errorf("mygate: %q", gw)
+	}
+	time.Sleep(2200 * time.Millisecond)
+	if back, _ := h.readFile("/etc/hostname.em0"); back != orig {
+		t.Errorf("nicht zurückgenommen:\n%s", back)
+	}
+	if err := h.IfConfirm(ctx); err == nil {
+		t.Error("Bestätigung nach Ablauf")
+	}
+	// Anwenden und bestätigen
+	ifConfirmWait = time.Minute
+	if _, err := h.SaveInterface(ctx, &c, false); err != nil {
+		t.Fatal(err)
+	}
+	if err := h.IfConfirm(ctx); err != nil {
+		t.Fatal(err)
+	}
+	fv, _ := h.Interface(ctx, "em0")
+	if fv.Conf.V4Mode != "static" || len(fv.Conf.V4) != 2 || fv.Conf.V4[0].Addr != "192.168.50.11" || fv.Pending != nil {
+		t.Errorf("nach Bestätigung: %+v", fv.Conf)
+	}
+	// Nicht verstandene Zeilen bleiben
+	h.writeAtomic("/etc/hostname.em1", []byte("inet 10.9.0.2 255.255.255.0\nlladdr 02:00:00:00:00:01\n!route add 10.8.0.0/16 10.9.0.1\nmtu 9000\nup\n"), 0o640)
+	e1, _ := h.Interface(ctx, "em1")
+	if e1.Conf.V4Mode != "static" || e1.Conf.V4[0].Prefix != 24 || e1.Conf.MTU != 9000 || len(e1.Preserved) != 2 {
+		t.Fatalf("em1: %+v %v", e1.Conf, e1.Preserved)
+	}
+	c1 := e1.Conf
+	c1.Descr = "Storage"
+	if _, err := h.SaveInterface(ctx, &c1, false); err != nil {
+		t.Fatal(err)
+	}
+	h.IfConfirm(ctx)
+	got, _ := h.readFile("/etc/hostname.em1")
+	for _, w := range []string{"inet 10.9.0.2/24", `description "Storage"`, "mtu 9000", "lladdr 02:00:00:00:00:01", "!route add 10.8.0.0/16 10.9.0.1", "\nup\n"} {
+		if !strings.Contains(got, w) {
+			t.Errorf("%q fehlt:\n%s", w, got)
+		}
+	}
+	// VLAN neu anlegen und zurücknehmen
+	vc := IfConf{Name: "vlan7", Kind: "vlan", VlanParent: "em1", VlanID: 7, V4Mode: "static", V4: []IfAddr{{Addr: "10.7.0.1", Prefix: 24}}}
+	if _, err := h.SaveInterface(ctx, &vc, false); err != nil {
+		t.Fatal(err)
+	}
+	if g, _ := h.readFile("/etc/hostname.vlan7"); !strings.Contains(g, "parent em1 vnetid 7\ninet 10.7.0.1/24") {
+		t.Errorf("vlan7:\n%s", g)
+	}
+	if err := h.IfRevert(ctx, false); err != nil {
+		t.Fatal(err)
+	}
+	if h.exists("/etc/hostname.vlan7") {
+		t.Error("vlan7 nach Rücknahme noch da")
+	}
+	// Ablehnungen
+	before, _ := h.readFile("/etc/hostname.em0")
+	base := func() IfConf { cc := c; cc.V4 = []IfAddr{{Addr: "192.168.50.12", Prefix: 24}}; return cc }
+	for i, mod := range []func(c *IfConf){
+		func(c *IfConf) { c.V4[0].Addr = "nicht-ip" },
+		func(c *IfConf) { c.V4[0].Prefix = 33 },
+		func(c *IfConf) { c.V4[0].Addr = "192.168.50.0" },
+		func(c *IfConf) { c.V4[0].Addr = "192.168.50.255" },
+		func(c *IfConf) { c.V4[0].Addr = "127.0.0.1" },
+		func(c *IfConf) { c.V4[0].Addr = "10.0.0.1" },    // schon auf vport0
+		func(c *IfConf) { c.V4 = append(c.V4, c.V4[0]) }, // doppelt
+		func(c *IfConf) { c.Gateway = "10.9.9.9" },
+		func(c *IfConf) { c.Gateway = "192.168.50.12" },
+		func(c *IfConf) { c.V4Mode, c.Gateway = "dhcp", "192.168.50.1" },
+		func(c *IfConf) { c.V6Mode, c.V6 = "static", []IfAddr{{Addr: "10.0.0.1", Prefix: 64}} },
+		func(c *IfConf) { c.V6Mode, c.V6 = "static", []IfAddr{{Addr: "2001:db8::1", Prefix: 200}} },
+		func(c *IfConf) { c.Descr = "a\"b" },
+		func(c *IfConf) { c.Descr = "a\nup" },
+		func(c *IfConf) { c.MTU = 100 },
+		func(c *IfConf) { c.V4Mode = "magisch" },
+		func(c *IfConf) { c.Kind = "ethernet"; c.VlanID = 5 },
+	} {
+		cc := base()
+		mod(&cc)
+		if _, err := h.SaveInterface(ctx, &cc, false); err == nil {
+			t.Errorf("Fall %d akzeptiert", i)
+		}
+	}
+	for i, vcc := range []IfConf{
+		{Name: "vlan8", Kind: "vlan", VlanParent: "lo0", VlanID: 8},
+		{Name: "vlan8", Kind: "vlan", VlanParent: "em1", VlanID: 5000},
+		{Name: "vlan8", Kind: "vlan", VlanParent: "em9", VlanID: 8},
+		{Name: "veb0", V4Mode: "static", V4: []IfAddr{{Addr: "10.1.1.1", Prefix: 24}}},
+		{Name: "lo0", V4Mode: "static", V4: []IfAddr{{Addr: "10.1.1.1", Prefix: 24}}},
+		{Name: "em0; reboot", V4Mode: "none"},
+	} {
+		if _, err := h.SaveInterface(ctx, &vcc, false); err == nil {
+			t.Errorf("Interface-Fall %d akzeptiert: %+v", i, vcc)
+		}
+	}
+	if after, _ := h.readFile("/etc/hostname.em0"); after != before {
+		t.Error("abgelehnte Eingaben haben hostname.em0 verändert")
+	}
+}
+
+func TestInterfaceRecoverAfterRestart(t *testing.T) {
+	h := newDemoHost(t)
+	ctx := context.Background()
+	orig, _ := h.readFile("/etc/hostname.em0")
+	v, _ := h.Interface(ctx, "em0")
+	c := v.Conf
+	c.V4Mode, c.V4 = "static", []IfAddr{{Addr: "192.168.50.77", Prefix: 24}}
+	old := ifConfirmWait
+	ifConfirmWait = time.Hour
+	defer func() { ifConfirmWait = old }()
+	if _, err := h.SaveInterface(ctx, &c, false); err != nil {
+		t.Fatal(err)
+	}
+	h2 := NewHost(h.R, h.Root, true)
+	h2.RecoverIf(ctx)
+	if back, _ := h2.readFile("/etc/hostname.em0"); back != orig {
+		t.Errorf("Wiederherstellung:\n%s", back)
+	}
+	if h2.exists(ifPendingPath) {
+		t.Error("Markierung blieb liegen")
 	}
 }

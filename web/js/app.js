@@ -123,6 +123,7 @@ const routes = {
   system: () => import('./views/system.js'),
   vnet: () => import('./views/vnet.js'),
   network: () => import('./views/network.js'),
+  iface: () => import('./views/iface.js'),
   firewall: () => import('./views/firewall.js'),
   files: () => import('./views/files.js'),
   logs: () => import('./views/logs.js'),
@@ -145,7 +146,7 @@ async function route() {
   const key = routes[parts[0]] ? parts[0] : '';
   routeKey = key;
   const seq = ++routeSeq;
-  const navKey = { vm: 'vms', datastore: 'san', portgroup: 'vnet' }[key] || key;
+  const navKey = { vm: 'vms', datastore: 'san', portgroup: 'vnet', iface: 'network' }[key] || key;
   if (cleanup) { try { cleanup(); } catch { /* egal */ } cleanup = null; }
   for (const a of app.querySelectorAll('.side-nav a')) {
     if ((a.dataset.key === 'dashboard' && key === '') || a.dataset.key === navKey) a.setAttribute('aria-current', 'page');

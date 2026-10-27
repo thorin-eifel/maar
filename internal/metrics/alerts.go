@@ -68,6 +68,7 @@ var EventKinds = map[string]string{
 	"access_denied":  "Zugriff verweigert (Rolle)",
 	"login_failed":   "Anmeldung fehlgeschlagen",
 	"pf_reverted":    "Paketfilter-Änderung automatisch zurückgenommen",
+	"if_reverted":    "Interface-Änderung automatisch zurückgenommen",
 }
 
 func DefaultAlertConfig() *AlertConfig {

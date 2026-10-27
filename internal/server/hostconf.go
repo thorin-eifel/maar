@@ -37,6 +37,8 @@ func (s *Server) confGet(w http.ResponseWriter, r *http.Request) {
 		v, err = s.Host.SysctlConf(r.Context())
 	case "relayd":
 		v, err = s.Host.Relayd(r.Context())
+	case "iface":
+		v, err = s.Host.Interface(r.Context(), r.URL.Query().Get("name"))
 	default:
 		jsonErr(w, http.StatusNotFound, "Unbekannte Konfiguration")
 		return
@@ -102,6 +104,12 @@ func (s *Server) confPut(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		res, err = s.Host.SaveSMTPD(r.Context(), &req.Conf, req.Activate, preview)
+	case "iface":
+		var c obsd.IfConf
+		if !decode(w, r, &c) {
+			return
+		}
+		res, err = s.Host.SaveInterface(r.Context(), &c, preview)
 	case "relayd":
 		var req struct {
 			Conf     obsd.RelaydConf `json:"conf"`
@@ -179,4 +187,16 @@ func (s *Server) pfRevert(w http.ResponseWriter, r *http.Request) {
 	err := s.Host.PFRevert(r.Context(), false)
 	s.audit(r, err, "Paketfilter-Änderung zurückgenommen")
 	respond(w, msg{Message: "Der vorherige Regelsatz ist wieder geladen."}, err)
+}
+
+func (s *Server) ifConfirm(w http.ResponseWriter, r *http.Request) {
+	err := s.Host.IfConfirm(r.Context())
+	s.audit(r, err, "Interface-Änderung bestätigt")
+	respond(w, msg{Message: "Die neue Interface-Konfiguration ist dauerhaft."}, err)
+}
+
+func (s *Server) ifRevert(w http.ResponseWriter, r *http.Request) {
+	err := s.Host.IfRevert(r.Context(), false)
+	s.audit(r, err, "Interface-Änderung zurückgenommen")
+	respond(w, msg{Message: "Der vorherige Stand ist wiederhergestellt."}, err)
 }

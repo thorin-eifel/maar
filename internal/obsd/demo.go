@@ -1170,11 +1170,25 @@ func (d *DemoRunner) synthIf(name string) string {
 		switch f[0] {
 		case "description":
 			fmt.Fprintf(&body, "\tdescription: %s\n", strings.Trim(strings.TrimPrefix(strings.TrimSpace(l), "description"), " \""))
+		case "dhcp":
+			fmt.Fprintf(&body, "\tinet 192.168.50.10 netmask 0xffffff00 broadcast 192.168.50.255\n")
 		case "inet":
-			if len(f) >= 3 {
-				p := netip.MustParsePrefix(inetToCIDR(f[1], "", f[2]))
-				m := ^uint32(0) << (32 - p.Bits())
-				fmt.Fprintf(&body, "\tinet %s netmask 0x%08x broadcast %s\n", f[1], m, broadcast(p.Masked()))
+			if len(f) == 2 && strings.Contains(f[1], "/") {
+				if p, err := netip.ParsePrefix(f[1]); err == nil {
+					m := ^uint32(0) << (32 - p.Bits())
+					fmt.Fprintf(&body, "\tinet %s netmask 0x%08x broadcast %s\n", p.Addr(), m, broadcast(p.Masked()))
+				}
+			}
+			if len(f) >= 3 && f[1] != "alias" {
+				if p, err := netip.ParsePrefix(inetToCIDR(f[1], "", f[2])); err == nil {
+					m := ^uint32(0) << (32 - p.Bits())
+					fmt.Fprintf(&body, "\tinet %s netmask 0x%08x broadcast %s\n", f[1], m, broadcast(p.Masked()))
+				}
+			} else if len(f) >= 3 {
+				if p, err := netip.ParsePrefix(f[2]); err == nil {
+					m := ^uint32(0) << (32 - p.Bits())
+					fmt.Fprintf(&body, "\tinet %s netmask 0x%08x broadcast %s\n", p.Addr(), m, broadcast(p.Masked()))
+				}
 			}
 		case "parent":
 			fmt.Fprintf(&body, "\tencap: vnetid %s parent %s txprio packet rxprio outer\n", val(f, 3), val(f, 1))

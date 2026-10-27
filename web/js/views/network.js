@@ -14,8 +14,9 @@ export default {
   title: 'Adapter & Routen',
   async render(main) {
     const body = h('div', { class: 'content' }, loading());
-    const newBtn = h('button', { class: 'cta', type: 'button' }, 'Interface konfigurieren');
-    main.append(pageHead('10 / NETZWERK', 'Adapter & Routen', 'Schnittstellen (ifconfig), Routen und Resolver. Dauerhafte Konfiguration über hostname.if(5), angewendet mit netstart.', newBtn), body);
+    const newBtn = h('button', { class: 'cta', type: 'button' }, 'VLAN anlegen');
+    const rawBtn = h('button', { class: 'secondary', type: 'button' }, 'Interface per Text-Vorlage');
+    main.append(pageHead('10 / NETZWERK', 'Adapter & Routen', 'Schnittstellen (ifconfig), Routen und Resolver. Dauerhafte Konfiguration über hostname.if(5), angewendet mit netstart.', rawBtn, newBtn), body);
     let data = null;
 
     async function load() {
@@ -69,7 +70,7 @@ export default {
           h('td', null, i.groups.map(g => h('span', { class: 'tag' }, g)), (i.members || []).map(m => h('span', { class: 'tag' }, '↳ ' + m))),
           h('td', { class: 'actions' },
             h('button', { class: 'mini-btn', type: 'button', onclick: () => showRaw(i) }, 'Details'),
-            i.hasFile ? h('a', { class: 'mini-btn', href: `#/files?path=${encodeURIComponent('/etc/hostname.' + i.name)}` }, 'Konfig') : null,
+            !['lo0', 'enc0', 'pflog0'].includes(i.name) && !/^(veb|vport|tap|wg|bridge|vether)/.test(i.name) ? h('a', { class: 'mini-btn', href: `#/iface/${i.name}` }, 'Einstellungen') : (i.hasFile ? h('a', { class: 'mini-btn', href: `#/files?path=${encodeURIComponent('/etc/hostname.' + i.name)}` }, 'Konfig') : null),
             i.hasFile ? btn('Netstart', 'netstart') : null,
             i.name === 'lo0' ? null : i.up ? btn('Down', 'down', true) : btn('Up', 'up')));
       });
@@ -89,7 +90,13 @@ export default {
               h('a', { class: 'mini-btn', href: '#/files?path=/etc/myname' }, 'myname'))))));
     }
 
-    newBtn.addEventListener('click', configure);
+    rawBtn.addEventListener('click', configure);
+    newBtn.addEventListener('click', () => {
+      const parent = h('select', null, data.interfaces.filter(i => !/^(lo|enc|pflog|veb|vport|tap|vlan|wg|bridge|vether)/.test(i.name)).map(i => h('option', { value: i.name }, i.name + (i.description ? ` – ${i.description}` : ''))));
+      const id = h('input', { type: 'number', min: 1, max: 4094, required: true, placeholder: '10' });
+      formDialog({ title: 'VLAN anlegen', meta: 'VLAN(4)', submit: 'Weiter', text: 'Legt vlan<ID> auf einem physischen Interface an. Adressen und Optionen stellst du im nächsten Schritt ein.',
+        fields: [field('Physisches Interface', parent), field('VLAN-ID (1–4094)', id)], onSubmit: async () => { location.hash = `#/iface/vlan${Number(id.value)}?parent=${encodeURIComponent(parent.value)}`; } });
+    });
     await load();
   },
 };

@@ -29,6 +29,8 @@ type Host struct {
 	sanMu     sync.Mutex // schützt san.json, iscsi.conf und Datastores
 	pfMu      sync.Mutex // schützt die unbestätigte pf-Änderung
 	pfPending *pfPendingState
+	ifMu      sync.Mutex // schützt die unbestätigte Interface-Änderung
+	ifPending *ifPendingState
 
 	hookMu   sync.Mutex
 	onEvent  func(kind, subject, message string)
