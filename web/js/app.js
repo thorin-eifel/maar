@@ -3,15 +3,18 @@ import { h, clear, toastError } from './ui.js';
 import { session, get, post, setUnauthorizedHandler } from './api.js';
 import { initJobs, toggleJobs } from './jobs.js';
 import { createInventory } from './inventory.js';
+import { icon } from './icons.js';
+import { startDecorating } from './decorate.js';
 
 const NAV = [
-  ['Übersicht', [['01', 'Übersicht', '#/', 'dashboard']]],
-  ['Inventar', [['02', 'Hosts', '#/hosts', 'hosts'], ['03', 'Virtuelle Maschinen', '#/vms', 'vms'], ['04', 'Templates', '#/templates', 'templates'], ['05', 'Konsolen', '#/console', 'console']]],
-  ['Speicher', [['06', 'Geteilter Speicher', '#/san', 'san'], ['07', 'Lokale Datenträger', '#/storage', 'storage'], ['08', 'Backup', '#/backup', 'backup']]],
-  ['Netzwerk', [['09', 'VM-Netze', '#/vnet', 'vnet'], ['10', 'Adapter & Routen', '#/network', 'network'], ['11', 'Paketfilter', '#/firewall', 'firewall']]],
-  ['Überwachung', [['12', 'Leistung & Alarme', '#/performance', 'performance'], ['13', 'Ereignisse', '#/events', 'events'], ['14', 'Prozesse', '#/processes', 'processes'], ['15', 'Protokolle', '#/logs', 'logs']]],
-  ['Host-Konfiguration', [['16', 'Dienste', '#/services', 'services'], ['17', 'Pakete & Updates', '#/packages', 'packages'], ['18', 'Benutzer & Gruppen', '#/users', 'users'], ['19', 'System', '#/system', 'system'], ['20', 'System-Einstellungen', '#/hostconf', 'hostconf'], ['21', 'Web, Mail & Lastverteilung', '#/webmail', 'webmail'], ['22', 'Konfigurationsdateien', '#/files', 'files']]],
-  ['Verwaltung', [['23', 'Zugriffssteuerung', '#/access', 'access']]],
+  ['Übersicht', 'home', [['Übersicht', '#/', 'dashboard', 'home']]],
+  ['Inventar', 'datacenter', [['Hosts', '#/hosts', 'hosts', 'server'], ['Virtuelle Maschinen', '#/vms', 'vms', 'vm'], ['Templates', '#/templates', 'templates', 'template'], ['Konsolen', '#/console', 'console', 'terminal']]],
+  ['Speicher', 'database', [['Geteilter Speicher', '#/san', 'san', 'database'], ['Lokale Datenträger', '#/storage', 'storage', 'disk'], ['Backup', '#/backup', 'backup', 'backup']]],
+  ['Netzwerk', 'network', [['VM-Netze', '#/vnet', 'vnet', 'switch'], ['Adapter & Routen', '#/network', 'network', 'ethernet'], ['Paketfilter', '#/firewall', 'firewall', 'firewall']]],
+  ['Überwachung', 'activity', [['Leistung & Alarme', '#/performance', 'performance', 'chart'], ['Ereignisse', '#/events', 'events', 'events'], ['Prozesse', '#/processes', 'processes', 'cpu'], ['Protokolle', '#/logs', 'logs', 'logs']]],
+  ['Host', 'server', [['Host & Betrieb', '#/system', 'system', 'gauge'], ['System-Einstellungen', '#/hostconf', 'hostconf', 'sliders'], ['Pakete & Updates', '#/packages', 'packages', 'package'], ['Benutzer & Gruppen', '#/users', 'users', 'users']]],
+  ['Dienste', 'toggle', [['Systemdienste', '#/services', 'services', 'toggle'], ['Web, Mail & Lastverteilung', '#/webmail', 'webmail', 'globe']]],
+  ['Verwaltung', 'shield-check', [['Zugriffssteuerung', '#/access', 'access', 'shield-check'], ['Konfigurationsdateien', '#/files', 'files', 'code']]],
 ];
 
 const app = document.getElementById('app');
@@ -24,7 +27,7 @@ function setTheme(btn) {
   const root = document.documentElement;
   const dark = root.dataset.theme === 'dark' || (!root.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
   btn.setAttribute('aria-pressed', String(dark));
-  btn.textContent = dark ? 'Hell' : 'Dunkel';
+  btn.replaceChildren(icon(dark ? 'sun' : 'moon'), dark ? 'Hell' : 'Dunkel');
 }
 
 function themeToggle() {
@@ -43,24 +46,25 @@ function themeToggle() {
 
 function glassToggle() {
   const root = document.documentElement;
-  const b = h('button', { class: 'mini-btn', type: 'button', 'aria-pressed': String(root.dataset.glass !== 'off') }, root.dataset.glass !== 'off' ? 'Glas an' : 'Glas aus');
+  const label = on => [icon('layers'), on ? 'Glas an' : 'Glas aus'];
+  const b = h('button', { class: 'mini-btn', type: 'button', 'aria-pressed': String(root.dataset.glass !== 'off') }, label(root.dataset.glass !== 'off'));
   b.addEventListener('click', () => {
     const on = root.dataset.glass === 'off';
     root.dataset.glass = on ? 'on' : 'off';
     try { localStorage.setItem('maar.glass', root.dataset.glass); } catch { /* privat */ }
     b.setAttribute('aria-pressed', String(on));
-    b.textContent = on ? 'Glas an' : 'Glas aus';
+    b.replaceChildren(...label(on));
   });
   return b;
 }
 
 function shell() {
   const nav = h('nav', { class: 'side-nav-wrap', 'aria-label': 'Hauptnavigation' },
-    NAV.map(([label, items]) => [
-      h('p', { class: 'nav-label' }, label),
-      h('div', { class: 'side-nav' }, items.filter(([, , , key]) => session.role === 'admin' || (key !== 'files' && key !== 'access')).map(([n, t, href, key]) => h('a', { href, 'data-key': key }, h('span', null, n), t))),
+    NAV.map(([label, gi, items]) => [
+      h('p', { class: 'nav-label' }, icon(gi, { cls: 'label-icon' }), label),
+      h('div', { class: 'side-nav' }, items.filter(([, , key]) => session.role === 'admin' || (key !== 'files' && key !== 'access')).map(([t, href, key, ic]) => h('a', { href, 'data-key': key, 'aria-label': t }, icon(ic, { cls: 'nav-icon' }), h('span', { class: 'nav-text' }, t)))),
     ]));
-  const logout = h('button', { class: 'mini-btn', type: 'button' }, 'Abmelden');
+  const logout = h('button', { class: 'mini-btn', type: 'button' }, icon('logout'), 'Abmelden');
   logout.addEventListener('click', async () => {
     try { await post('/api/logout'); } catch { /* egal */ }
     session.user = null;
@@ -68,12 +72,12 @@ function shell() {
     renderLogin();
   });
   const badge = h('span', { class: 'badge', hidden: true });
-  const jobsBtn = h('button', { class: 'mini-btn', type: 'button', id: 'jobs-btn', 'aria-expanded': 'false', onclick: () => toggleJobs() }, 'Aufgaben', badge);
+  const jobsBtn = h('button', { class: 'mini-btn', type: 'button', id: 'jobs-btn', 'aria-expanded': 'false', onclick: () => toggleJobs() }, icon('tasks'), 'Aufgaben', badge);
   crumb = h('span', { class: 'meta' });
   main = h('main', { id: 'inhalt', tabindex: '-1' });
   if (inventory) inventory.destroy();
   inventory = createInventory();
-  treeBtn = h('button', { class: 'mini-btn', type: 'button', id: 'tree-btn', 'aria-pressed': String(treeShown()), hidden: true }, 'Inventar');
+  treeBtn = h('button', { class: 'mini-btn', type: 'button', id: 'tree-btn', 'aria-pressed': String(treeShown()), hidden: true }, icon('tree'), 'Inventar');
   treeBtn.addEventListener('click', () => { const on = !treeShown(); try { localStorage.setItem('maar.tree.hidden', on ? '0' : '1'); } catch { /* privat */ } applyTree(); });
   clear(app, h('div', { class: 'layout' },
     h('aside', { class: 'sidebar', 'aria-label': 'Navigation' },
@@ -88,6 +92,13 @@ function shell() {
       h('div', { class: 'topline' }, crumb, h('div', { class: 'top-actions' }, treeBtn, jobsBtn, themeToggle(), glassToggle())),
       main)));
   initJobs(badge);
+}
+
+// Setzt das Symbol des Menüpunkts vor die Bereichszeile im Seitenkopf.
+function headIcon(key) {
+  const item = NAV.flatMap(g => g[2]).find(i => i[2] === (key || 'dashboard'));
+  const idx = main.querySelector('.page-head .section-index');
+  if (item && idx && !idx.querySelector('svg')) idx.prepend(icon(item[3], { cls: 'head-icon' }));
 }
 
 function applyTree() {
@@ -169,6 +180,7 @@ async function route() {
   }
   cleanup = done;
   applyTree();
+  headIcon(navKey);
   crumb.textContent = `${session.hostname} / ${mod.title}`;
   document.title = `${mod.title} · ${session.hostname}`;
   if (seq === routeSeq && document.activeElement === document.body) main.focus({ preventScroll: true });
@@ -212,6 +224,7 @@ function renderLogin(msg) {
 function start() {
   shell();
   route();
+  startDecorating();
 }
 
 setUnauthorizedHandler(() => {

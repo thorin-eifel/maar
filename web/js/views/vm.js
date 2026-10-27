@@ -2,6 +2,7 @@
 import { h, clear, pageHead, panel, table, pill, metric, vmStatePill, loading, toast, toastError, confirm, busy, bytes, pct, dateTime } from '../ui.js';
 import { get, post, session, q } from '../api.js';
 import { lineChart } from '../chart.js';
+import { icon } from '../icons.js';
 import { watchJob, onJobDone } from '../jobs.js';
 import { deployDialog, toTemplateDialog } from '../deploy.js';
 import { backupNowDialog, scheduleText } from './backup.js';
@@ -10,7 +11,7 @@ import { vmSettingsDialog } from '../vmsettings.js';
 import { act, startFromISODialog, editBlockDialog, removeVMDialog, hardKillDialog } from '../vmactions.js';
 
 const enc = encodeURIComponent;
-const TABS = [['summary', 'Zusammenfassung'], ['monitor', 'Überwachen'], ['config', 'Konfigurieren'], ['snapshots', 'Snapshots'], ['backup', 'Sicherung']];
+const TABS = [['summary', 'Zusammenfassung', 'summary'], ['monitor', 'Überwachen', 'chart'], ['config', 'Konfigurieren', 'sliders'], ['snapshots', 'Snapshots', 'camera'], ['backup', 'Sicherung', 'backup']];
 const KIND = { aktion: ['info', 'Aktion'], anmeldung: ['off', 'Anmeldung'], auftrag: ['ok', 'Auftrag'], verweigert: ['warn', 'verweigert'] };
 const RANGES = [['1h', '1 Std'], ['6h', '6 Std'], ['24h', '24 Std'], ['7d', '7 Tage']];
 const MODE = { snapshot: 'Snapshot', offline: 'Offline', pause: 'Pause' };
@@ -57,9 +58,9 @@ export default {
           btn('Als Template', async () => toTemplateDialog(vm)));
         if (vm.conf && !running && !paused) acts.push(btn('Löschen', async () => { if (await removeVMDialog(vm)) location.hash = '#/vms'; }, 'secondary danger'));
       }
-      clear(head, pageHead('03 / INVENTAR', name, `${vm.id !== '-' ? `ID ${vm.id} · PID ${vm.pid} · ` : ''}${vm.conf ? `${vm.vcpus || vm.conf.cpus} vCPU · ${vm.conf.memory || vm.maxmem}` : 'nicht in vm.conf definiert'}`, vmStatePill(vm.state), ...acts));
-      clear(tabsEl, TABS.map(([k, l]) => {
-        const b = h('button', { class: 'tab', type: 'button', role: 'tab', 'aria-selected': String(k === tab), tabindex: k === tab ? '0' : '-1' }, l, k === 'snapshots' && vm.snapshots ? h('span', { class: 'badge' }, vm.snapshots) : null, k === 'summary' && d.alerts.length ? h('span', { class: 'badge bad' }, d.alerts.length) : null);
+      clear(head, pageHead('INVENTAR', name, `${vm.id !== '-' ? `ID ${vm.id} · PID ${vm.pid} · ` : ''}${vm.conf ? `${vm.vcpus || vm.conf.cpus} vCPU · ${vm.conf.memory || vm.maxmem}` : 'nicht in vm.conf definiert'}`, vmStatePill(vm.state), ...acts));
+      clear(tabsEl, TABS.map(([k, l, ic]) => {
+        const b = h('button', { class: 'tab', type: 'button', role: 'tab', 'aria-selected': String(k === tab), tabindex: k === tab ? '0' : '-1' }, icon(ic), l, k === 'snapshots' && vm.snapshots ? h('span', { class: 'badge' }, vm.snapshots) : null, k === 'summary' && d.alerts.length ? h('span', { class: 'badge bad' }, d.alerts.length) : null);
         b.addEventListener('click', () => { tab = k; history.replaceState(null, '', `#/vm/${enc(name)}/${k}`); drawHead(); draw(); });
         b.addEventListener('keydown', e => {
           const i = TABS.findIndex(t => t[0] === tab), n = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : null;

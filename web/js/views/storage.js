@@ -5,7 +5,7 @@ export default {
   title: 'Lokale Datenträger',
   async render(main) {
     const body = h('div', { class: 'content' }, loading());
-    main.append(pageHead('07 / SPEICHER', 'Lokale Datenträger', 'Eingehängte Dateisysteme (df, mount) und Datenträger mit ihren Disklabels.'), body);
+    main.append(pageHead('SPEICHER', 'Lokale Datenträger', 'Eingehängte Dateisysteme (df, mount) und Datenträger mit ihren Disklabels.'), body);
     const st = await get('/api/storage');
 
     const showLabel = async d => {

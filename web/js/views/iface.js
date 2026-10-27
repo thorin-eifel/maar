@@ -31,7 +31,7 @@ export default {
 
     function draw(v) {
       const c = clone(v.conf);
-      clear(head, pageHead('10 / NETZWERK', `Interface ${name}`, v.managedBy ? `Verwaltet von ${v.managedBy}` : `${v.link || 'kein Link-Status'}${v.current.length ? ' · ' + v.current.join(', ') : ''}`,
+      clear(head, pageHead('NETZWERK', `Interface ${name}`, v.managedBy ? `Verwaltet von ${v.managedBy}` : `${v.link || 'kein Link-Status'}${v.current.length ? ' · ' + v.current.join(', ') : ''}`,
         v.egress ? pill('warn', 'Uplink (Standardroute)') : null, v.exists ? null : pill('info', 'neu')));
       if (!v.editable) {
         clear(body, h('div', { class: 'note warn' }, v.reason), h('div', { class: 'toolbar' }, h('a', { class: 'secondary', href: '#/network' }, 'Zurück'), h('a', { class: 'mini-btn', href: `#/files?path=${encodeURIComponent('/etc/hostname.' + name)}` }, 'Als Text bearbeiten')));

@@ -42,9 +42,11 @@ code,kbd,pre,.mono{font-family:var(--mono)}
 .side-nav{display:flex;flex-direction:column;gap:1px}
 .side-nav a{display:flex;align-items:center;gap:12px;padding:8px 10px;margin-left:-10px;text-decoration:none;font-size:13px;border-radius:4px;transition:background var(--fast)}
 .side-nav a:hover,.side-nav a:focus-visible{background:var(--brand-teal-200);color:var(--brand-teal-900)}
-.side-nav a span{font:11px var(--mono);color:var(--muted);min-width:18px}
+.side-nav a .nav-text{min-width:0}
+.side-nav a .nav-icon{width:18px;height:18px;color:var(--muted);flex:none}
 .side-nav a[aria-current="page"]{background:var(--ink);color:var(--bg)}
-.side-nav a[aria-current="page"] span{color:var(--brand-teal-500)}
+.side-nav a[aria-current="page"] .nav-icon{color:var(--brand-teal-500)}
+.side-nav a:hover .nav-icon{color:inherit}
 .side-bottom{margin-top:auto;padding-top:24px;font-size:12px;color:var(--muted);border-top:1px solid var(--line-soft);display:grid;gap:10px}
 .side-bottom strong{color:var(--ink);font-weight:600}
 .page{min-width:0;display:flex;flex-direction:column}
@@ -126,7 +128,7 @@ table.table{width:100%;border-collapse:collapse;font-size:13px}
 .empty{padding:34px 20px;text-align:center;color:var(--muted);font-size:14px}
 
 .pill{display:inline-flex;align-items:center;gap:7px;padding:3px 10px 3px 8px;border-radius:999px;font:600 11px/1.5 var(--mono);letter-spacing:.04em;text-transform:uppercase;border:1px solid transparent;white-space:nowrap}
-.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.pill::before{display:none}
 .pill.ok{background:var(--ok-soft);color:var(--ok)}
 .pill.off{background:var(--surface-soft);color:var(--muted);border-color:var(--line-soft)}
 .pill.bad{background:var(--danger-soft);color:var(--action)}
@@ -345,3 +347,23 @@ details.expert pre{margin:10px 0}
 .pf-pending{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;position:sticky;top:63px;z-index:15}
 a.tab{text-decoration:none;display:inline-block}
 .cf-fields .field{flex:1 1 170px;max-width:270px}.cf-fields .check{align-self:center}
+
+/* Symbole */
+.icon{width:1.15em;height:1.15em;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none;vertical-align:-.2em}
+.icon.flip{transform:scaleX(-1)}
+.mini-btn,.cta,.secondary,.glass-button{display:inline-flex;align-items:center;gap:.5em}
+a.tab{display:inline-flex;align-items:center}
+.tab{display:inline-flex;align-items:center;gap:.55em}
+.tab .icon{width:1.1em;height:1.1em}
+.nav-label{display:flex;align-items:center;gap:8px}
+.nav-label .label-icon{width:13px;height:13px;stroke-width:2}
+.pill .pill-icon{width:1em;height:1em;stroke-width:2.2;margin-right:-1px}
+.toast strong{display:flex;align-items:center;gap:8px}
+.toast-icon{color:var(--accent);width:1.2em;height:1.2em}
+.toast.bad .toast-icon{color:var(--action)}
+.page-head .section-index{display:flex;align-items:center;gap:8px}
+.head-icon{width:15px;height:15px;stroke-width:2}
+.tree-icon{width:16px;height:16px;color:var(--muted);flex:none}
+.tree-link[aria-current="page"] .tree-icon{color:inherit}
+.tree-icon.st-running{color:oklch(62% .15 150)}.tree-icon.st-paused{color:oklch(62% .12 240)}.tree-icon.st-offline{color:var(--action)}
+.metric .meta{display:flex;align-items:center;gap:7px}.metric-icon{width:14px;height:14px;stroke-width:2;color:var(--accent)}

@@ -2,6 +2,7 @@
 import { h, clear } from './ui.js';
 import { get, session } from './api.js';
 import { onJobDone } from './jobs.js';
+import { icon } from './icons.js';
 
 const enc = encodeURIComponent;
 const KEY = 'maar.tree';
@@ -28,17 +29,17 @@ export function createInventory() {
     for (const x of hosts) {
       const s = x.summary, id = x.id, kids = [];
       if (s) {
-        kids.push({ id: `vms:${id}`, label: 'Virtuelle Maschinen', count: s.vms.length, href: x.local ? '#/vms' : `#/hosts/${enc(id)}`, folder: true,
-          children: s.vms.map(v => ({ id: `vm:${id}:${v.name}`, label: v.name, state: v.state, href: x.local ? `#/vm/${enc(v.name)}` : `#/hosts/${enc(id)}`, leaf: true })) });
+        kids.push({ id: `vms:${id}`, icon: 'vm', label: 'Virtuelle Maschinen', count: s.vms.length, href: x.local ? '#/vms' : `#/hosts/${enc(id)}`, folder: true,
+          children: s.vms.map(v => ({ id: `vm:${id}:${v.name}`, icon: 'vm', label: v.name, state: v.state, href: x.local ? `#/vm/${enc(v.name)}` : `#/hosts/${enc(id)}`, leaf: true })) });
         if (x.local) {
-          if (s.templates?.length) kids.push({ id: 'tpl', label: 'Templates', count: s.templates.length, href: '#/templates', folder: true, children: s.templates.map(t => ({ id: `tpl:${t}`, label: t, href: '#/templates', leaf: true })) });
-          if (s.datastores?.length) kids.push({ id: 'ds', label: 'Datastores', count: s.datastores.length, href: '#/san', folder: true, children: s.datastores.map(t => ({ id: `ds:${t}`, label: t, href: `#/datastore/${enc(t)}`, leaf: true })) });
-          if (s.portGroups?.length) kids.push({ id: 'pg', label: 'Portgruppen', count: s.portGroups.length, href: '#/vnet', folder: true, children: s.portGroups.map(t => ({ id: `pg:${t}`, label: t, href: `#/portgroup/${enc(t)}`, leaf: true })) });
+          if (s.templates?.length) kids.push({ id: 'tpl', icon: 'template', label: 'Templates', count: s.templates.length, href: '#/templates', folder: true, children: s.templates.map(t => ({ id: `tpl:${t}`, icon: 'template', label: t, href: '#/templates', leaf: true })) });
+          if (s.datastores?.length) kids.push({ id: 'ds', icon: 'database', label: 'Datastores', count: s.datastores.length, href: '#/san', folder: true, children: s.datastores.map(t => ({ id: `ds:${t}`, icon: 'database', label: t, href: `#/datastore/${enc(t)}`, leaf: true })) });
+          if (s.portGroups?.length) kids.push({ id: 'pg', icon: 'switch', label: 'Portgruppen', count: s.portGroups.length, href: '#/vnet', folder: true, children: s.portGroups.map(t => ({ id: `pg:${t}`, icon: 'switch', label: t, href: `#/portgroup/${enc(t)}`, leaf: true })) });
         }
       }
-      nodes.push({ id: `host:${id}`, label: x.name || id, state: x.status === 'ok' ? 'running' : 'offline', host: true, hint: x.local ? 'dieser Host' : '', href: `#/hosts/${enc(id)}`, children: kids });
+      nodes.push({ id: `host:${id}`, icon: 'server', label: x.name || id, state: x.status === 'ok' ? 'running' : 'offline', host: true, hint: x.local ? 'dieser Host' : '', href: `#/hosts/${enc(id)}`, children: kids });
     }
-    return [{ id: 'hosts', label: 'Hosts', count: hosts.length, href: '#/hosts', folder: true, children: nodes }];
+    return [{ id: 'hosts', icon: 'datacenter', label: 'Hosts', count: hosts.length, href: '#/hosts', folder: true, children: nodes }];
   }
 
   const matches = n => n.label.toLowerCase().includes(filter);
@@ -62,7 +63,7 @@ export function createInventory() {
     const expanded = filter ? true : open.has(n.id);
     const li = h('li', { role: 'treeitem', 'aria-expanded': kids ? String(expanded) : null, 'aria-level': String(depth), 'aria-selected': String(n.id === cur) });
     const link = h('a', { href: n.href, class: 'tree-link', tabindex: '-1', 'aria-current': n.id === cur ? 'page' : null, style: { paddingLeft: `${8 + (depth - 1) * 16 + (kids ? 0 : 18)}px` } },
-      n.state ? dot(n.state) : null, h('span', { class: 'tree-label' }, n.label), n.count !== undefined ? h('span', { class: 'tree-count' }, n.count) : null, n.hint ? h('span', { class: 'tree-hint' }, n.hint) : null);
+      n.icon ? icon(n.icon, { cls: 'tree-icon' + (n.state ? ' st-' + n.state : '') }) : null, n.state ? dot(n.state) : null, h('span', { class: 'tree-label' }, n.label), n.count !== undefined ? h('span', { class: 'tree-count' }, n.count) : null, n.hint ? h('span', { class: 'tree-hint' }, n.hint) : null);
     const line = h('div', { class: 'tree-row' });
     if (kids) {
       const tg = h('button', { class: 'tree-toggle', type: 'button', tabindex: '-1', 'aria-label': `${n.label} ${expanded ? 'einklappen' : 'ausklappen'}` }, expanded ? '▾' : '▸');

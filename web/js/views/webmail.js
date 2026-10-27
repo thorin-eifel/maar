@@ -4,8 +4,9 @@
 import { h, clear, pageHead, panel, pill, loading, toast, toastError, confirm, dialog, field, busy } from '../ui.js';
 import { get, put } from '../api.js';
 import { rows, sel, inp, chk } from './hostconf.js';
+import { icon } from '../icons.js';
 
-const TABS = [['httpd', 'Webserver (httpd)'], ['smtpd', 'Mail (smtpd)'], ['mail', 'Mail-Adressen'], ['relayd', 'Lastverteilung (relayd)']];
+const TABS = [['httpd', 'Webserver (httpd)', 'globe'], ['smtpd', 'Mail (smtpd)', 'mail'], ['mail', 'Mail-Adressen', 'user'], ['relayd', 'Lastverteilung (relayd)', 'balance']];
 const clone = x => JSON.parse(JSON.stringify(x));
 
 export default {
@@ -13,11 +14,11 @@ export default {
   async render(main, parts) {
     let tab = TABS.some(t => t[0] === parts[0]) ? parts[0] : 'httpd', pending = null;
     const tabsEl = h('div', { class: 'tabs', role: 'tablist', 'aria-label': 'Dienste' }), body = h('div', { class: 'content' }, loading());
-    main.append(pageHead('21 / HOST-KONFIGURATION', 'Web, Mail & Lastverteilung', 'Webseiten, Mail-Zustellung und Lastverteilung als Formulare. Zur Auswahl steht nur, was es auf diesem Host gibt; maar schreibt die Dateien im Hintergrund, prüft sie und lädt den Dienst neu.'), tabsEl, body);
+    main.append(pageHead('DIENSTE', 'Web, Mail & Lastverteilung', 'Webseiten, Mail-Zustellung und Lastverteilung als Formulare. Zur Auswahl steht nur, was es auf diesem Host gibt; maar schreibt die Dateien im Hintergrund, prüft sie und lädt den Dienst neu.'), tabsEl, body);
 
     function drawTabs() {
-      clear(tabsEl, TABS.map(([k, l]) => {
-        const b = h('button', { class: 'tab', type: 'button', role: 'tab', 'aria-selected': String(k === tab) }, l);
+      clear(tabsEl, TABS.map(([k, l, ic]) => {
+        const b = h('button', { class: 'tab', type: 'button', role: 'tab', 'aria-selected': String(k === tab) }, icon(ic), l);
         b.addEventListener('click', () => { tab = k; history.replaceState(null, '', `#/webmail/${k}`); drawTabs(); load(); });
         return b;
       }));

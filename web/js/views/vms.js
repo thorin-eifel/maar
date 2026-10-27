@@ -20,7 +20,7 @@ export default {
     const body = h('div', { class: 'content' }, loading());
     const newBtn = h('button', { class: 'cta', type: 'button' }, 'VM anlegen');
     const refreshBtn = h('button', { class: 'secondary', type: 'button' }, 'Aktualisieren');
-    main.append(pageHead('03 / INVENTAR', 'Virtuelle Maschinen', 'vmd(8) und vm.conf(5): VMs anlegen, starten, stoppen und direkt über die serielle Konsole bedienen.', refreshBtn, newBtn), body);
+    main.append(pageHead('INVENTAR', 'Virtuelle Maschinen', 'vmd(8) und vm.conf(5): VMs anlegen, starten, stoppen und direkt über die serielle Konsole bedienen.', refreshBtn, newBtn), body);
     let data = null;
 
     async function load() {

@@ -28,7 +28,7 @@ export default {
           await del(`/api/san/datastores/${enc(name)}`); toast('Entfernt.'); location.hash = '#/san';
         }, 'secondary danger'));
       }
-      clear(head, pageHead('06 / SPEICHER', name, d.mount, d.mounted ? pill('ok', 'eingehängt') : d.present ? pill('off', 'ausgehängt') : pill('bad', 'Disk fehlt'), ...acts));
+      clear(head, pageHead('SPEICHER', name, d.mount, d.mounted ? pill('ok', 'eingehängt') : d.present ? pill('off', 'ausgehängt') : pill('bad', 'Disk fehlt'), ...acts));
       draw();
     }
 

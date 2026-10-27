@@ -2,8 +2,9 @@
 // Die Auswahl kommt vom Host; die Dateien schreibt maar im Hintergrund (mit Prüfung und Sicherung).
 import { h, clear, pageHead, panel, table, pill, loading, toast, toastError, dialog, field, busy } from '../ui.js';
 import { get, put } from '../api.js';
+import { icon } from '../icons.js';
 
-const TABS = [['ntp', 'Zeit (ntpd)'], ['dns', 'Namensauflösung'], ['hosts', 'Hosts-Datei'], ['ssh', 'SSH-Zugang'], ['doas', 'Rechte (doas)'], ['sysctl', 'Kernel (sysctl)']];
+const TABS = [['ntp', 'Zeit (ntpd)', 'clock'], ['dns', 'Namensauflösung', 'globe'], ['hosts', 'Hosts-Datei', 'link'], ['ssh', 'SSH-Zugang', 'key'], ['doas', 'Rechte (doas)', 'lock'], ['sysctl', 'Kernel (sysctl)', 'cpu']];
 const num = (v, d = 0) => Number.isFinite(Number(v)) && v !== '' ? Number(v) : d;
 
 // Eine Liste bearbeitbarer Zeilen mit „Hinzufügen“.
@@ -39,11 +40,11 @@ export default {
     let pending = null;
     let tab = TABS.some(t => t[0] === parts[0]) ? parts[0] : 'ntp';
     const tabsEl = h('div', { class: 'tabs', role: 'tablist', 'aria-label': 'Bereiche' }), body = h('div', { class: 'content' }, loading());
-    main.append(pageHead('20 / HOST-KONFIGURATION', 'System-Einstellungen', 'Zeitsynchronisation, DNS, Hosts-Datei, SSH-Server, doas-Rechte und Kernel-Parameter als Formulare. Zur Auswahl steht nur, was es auf diesem Host gibt; maar schreibt die Dateien im Hintergrund und prüft sie vorher.'), tabsEl, body);
+    main.append(pageHead('HOST', 'System-Einstellungen', 'Zeitsynchronisation, DNS, Hosts-Datei, SSH-Server, doas-Rechte und Kernel-Parameter als Formulare. Zur Auswahl steht nur, was es auf diesem Host gibt; maar schreibt die Dateien im Hintergrund und prüft sie vorher.'), tabsEl, body);
 
     function drawTabs() {
-      clear(tabsEl, TABS.map(([k, l]) => {
-        const b = h('button', { class: 'tab', type: 'button', role: 'tab', 'aria-selected': String(k === tab) }, l);
+      clear(tabsEl, TABS.map(([k, l, ic]) => {
+        const b = h('button', { class: 'tab', type: 'button', role: 'tab', 'aria-selected': String(k === tab) }, icon(ic), l);
         b.addEventListener('click', () => { tab = k; history.replaceState(null, '', `#/hostconf/${k}`); drawTabs(); load(); });
         return b;
       }));

@@ -5,7 +5,7 @@ export default {
   title: 'Protokolle',
   async render(main, _parts, query) {
     const body = h('div', { class: 'content' }, loading());
-    main.append(pageHead('15 / ÜBERWACHUNG', 'Protokolle', 'Dateien unter /var/log ansehen, durchsuchen und live verfolgen.'), body);
+    main.append(pageHead('ÜBERWACHUNG', 'Protokolle', 'Dateien unter /var/log ansehen, durchsuchen und live verfolgen.'), body);
 
     const files = await get('/api/logs');
     let es = null, lines = [], filter = '';

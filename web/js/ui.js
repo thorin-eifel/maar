@@ -1,3 +1,5 @@
+import { icon } from './icons.js';
+
 // Kleine DOM-Helfer. Inhalte werden ausschließlich als Text gesetzt (kein innerHTML),
 // damit Ausgaben des Systems nie als Markup interpretiert werden.
 
@@ -63,7 +65,8 @@ export function pct(n) { return (Math.round(n * 10) / 10).toString().replace('.'
 
 // ---- Bausteine ----
 
-export function pill(kind, text) { return h('span', { class: 'pill ' + kind }, text); }
+const PILL_ICON = { ok: 'check', bad: 'x-circle', warn: 'warn', info: 'info', off: 'minus-circle' };
+export function pill(kind, text) { return h('span', { class: 'pill ' + kind }, icon(PILL_ICON[kind] || 'info', { cls: 'pill-icon' }), text); }
 
 export function vmStatePill(state) {
   const map = { running: ['ok', 'läuft'], stopped: ['off', 'gestoppt'], paused: ['info', 'pausiert'], stopping: ['warn', 'stoppt'], starting: ['warn', 'startet'], disabled: ['off', 'deaktiviert'] };
@@ -96,6 +99,9 @@ export function table(cols, rows, empty = 'Keine Einträge.') {
       h('tbody', null, rows)));
 }
 
+const METRIC_ICONS = [[/CPU|Prozessor|vCPU/i, 'cpu'], [/Speicher aktiv|RAM|Arbeitsspeicher/i, 'memory'], [/Kapazität|Belegt|Datastores?|iSCSI|Frei/i, 'database'], [/Laufzeit|Uptime/i, 'clock'], [/VMs|Maschinen/i, 'vm'], [/Hosts?\b/i, 'server'],
+  [/Meldung|Alarm|Fehler/i, 'bell'], [/Snapshot/i, 'camera'], [/Netz|Adressen|Dienste/i, 'network'], [/FC|HBA/i, 'hba'], [/Disk|Platte|Image/i, 'disk'], [/Status/i, 'activity'], [/Regeln|Tabellen|States/i, 'firewall'], [/Speicher/i, 'memory'], [/Sicherung|Backup/i, 'backup']];
+
 export function metric(meta, value, sub, barPct) {
   let bar = null;
   if (barPct !== undefined) {
@@ -104,7 +110,8 @@ export function metric(meta, value, sub, barPct) {
     i.style.width = Math.max(0, Math.min(100, barPct)) + '%';
     bar = h('div', { class: cls, role: 'meter', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(Math.round(barPct)), 'aria-label': meta }, i);
   }
-  return h('div', { class: 'metric' }, h('span', { class: 'meta' }, meta), h('strong', null, value), sub ? h('span', { class: 'sub' }, sub) : null, bar);
+  const mi = METRIC_ICONS.find(([re]) => re.test(meta));
+  return h('div', { class: 'metric' }, h('span', { class: 'meta' }, mi ? icon(mi[1], { cls: 'metric-icon' }) : null, meta), h('strong', null, value), sub ? h('span', { class: 'sub' }, sub) : null, bar);
 }
 
 export function field(label, input, hint) {
@@ -118,7 +125,7 @@ export function loading(text = 'Lädt …') { return h('div', { class: 'empty', 
 export function toast(title, detail, bad = false) {
   const box = document.getElementById('toasts');
   const t = h('div', { class: 'toast glass' + (bad ? ' bad' : ''), role: bad ? 'alert' : 'status' },
-    h('strong', null, title), detail ? h('pre', null, detail) : null);
+    h('strong', null, icon(bad ? 'x-circle' : 'check-circle', { cls: 'toast-icon' }), title), detail ? h('pre', null, detail) : null);
   box.appendChild(t);
   setTimeout(() => t.remove(), bad ? 12000 : 5000);
 }

@@ -30,7 +30,7 @@ export default {
         }).catch(toastError));
         acts.push(edit, rm);
       }
-      clear(head, pageHead('09 / NETZWERK', name, `${d.description ? d.description + ' · ' : ''}${d.bridge}${d.vlan ? ' · VLAN ' + d.vlan : ''}`, d.present ? pill('ok', 'aktiv') : pill('warn', 'Switch fehlt'), ...acts));
+      clear(head, pageHead('NETZWERK', name, `${d.description ? d.description + ' · ' : ''}${d.bridge}${d.vlan ? ' · VLAN ' + d.vlan : ''}`, d.present ? pill('ok', 'aktiv') : pill('warn', 'Switch fehlt'), ...acts));
       draw();
     }
 

@@ -9,7 +9,7 @@ Auf dem Host wird außer dem Basissystem nichts benötigt.
 
 ## Funktionen
 
-Das Menü folgt der Logik des vSphere Clients: **Inventar** (Hosts, VMs, Templates, Konsolen), **Speicher** (geteilter Speicher, lokale Datenträger, Backup), **Netzwerk** (VM-Netze/Portgruppen, Adapter & Routen, Paketfilter), **Überwachung** (Leistung & Alarme, Ereignisse, Prozesse, Protokolle), **Host-Konfiguration** (Dienste, Pakete & Updates, Benutzer, System, Konfigurationsdateien) und **Verwaltung** (Zugriffssteuerung). Snapshots liegen wie in vSphere an der einzelnen VM.
+Das Menü folgt der Logik des vSphere Clients und ist nach Aufgaben geordnet: **Übersicht**; **Inventar** (Hosts, Virtuelle Maschinen, Templates, Konsolen); **Speicher** (Geteilter Speicher, Lokale Datenträger, Backup); **Netzwerk** (VM-Netze, Adapter & Routen, Paketfilter); **Überwachung** (Leistung & Alarme, Ereignisse, Prozesse, Protokolle); **Host** (Host & Betrieb, System-Einstellungen, Pakete & Updates, Benutzer & Gruppen); **Dienste** (Systemdienste, Web, Mail & Lastverteilung); **Verwaltung** (Zugriffssteuerung, Konfigurationsdateien). Snapshots liegen wie in vSphere an der einzelnen VM. Jeder Menüpunkt, Reiter, Knoten des Inventarbaums, Status und jede Standardaktion trägt ein Symbol aus einem eigenen Linien-Symbolsatz (`web/js/icons.js`, über 90 Symbole; erbt Farbe und Größe, hell und dunkel, ohne externe Dateien). Schaltflächen bekommen ihr Symbol automatisch nach ihrer Beschriftung (`web/js/decorate.js`); Status tragen zusätzlich zur Farbe ein Symbol (Haken, Warndreieck, Kreuz, Info, Strich).
 
 **Inventarbaum:** Neben den Seiten Hosts, VMs, Templates und Konsolen steht ein Baum (Hosts → Host → VMs, Templates, Datastores, Portgruppen) mit Statuspunkten, Suche und Tastatursteuerung (Pfeiltasten, Pos1/Ende). Er lässt sich über „Inventar“ in der Kopfzeile ein- und ausblenden. Eingegrenzte Konten sehen nur ihre VMs. VMs anderer Hosts öffnen die Host-Seite; dort bleibt es beim Lesen.
 
@@ -152,7 +152,7 @@ Wo es geht, ändert maar Einstellungen über Formulare mit Auswahlfeldern, die n
 
 Alles andere im vm.conf-Block bleibt unverändert (Netzwerkadapter mit MAC, `boot <Kernel>`, `interfaces`, `allow instance`, …). Netzwerkadapter pflegst du weiter unter „Netzwerk“ (Portgruppe, MAC, feste Adresse). Der Server prüft alles noch einmal: Eine Disk, die einer anderen VM gehört, liegt außerhalb von `/var/vmd` oder fehlt, wird abgelehnt, ebenso unbekannte Konten oder mehr Speicher als der Host hat; dann bleibt vm.conf unberührt. Das Bearbeiten als Text bleibt für Experten erreichbar („vm.conf anzeigen“ im Reiter Konfigurieren).
 
-**System-Einstellungen** (Host-Konfiguration → „System-Einstellungen“, nur Administratoren): Formulare für `/etc/ntpd.conf`, `/etc/resolv.conf`, `/etc/hosts` und `/etc/ssh/sshd_config`. Jedes Formular hat eine **Vorschau** der Datei, die entstehen würde, und schreibt erst bei „Speichern und anwenden“ – mit Syntaxprüfung (`ntpd -n`, `sshd -t`), Sicherung der alten Fassung und anschließendem Neustart bzw. Neuladen des Dienstes. Kommentare und alle Zeilen, die das Formular nicht kennt, bleiben unverändert und werden angezeigt.
+**System-Einstellungen** (Host → „System-Einstellungen“, nur Administratoren): Formulare für `/etc/ntpd.conf`, `/etc/resolv.conf`, `/etc/hosts` und `/etc/ssh/sshd_config`. Jedes Formular hat eine **Vorschau** der Datei, die entstehen würde, und schreibt erst bei „Speichern und anwenden“ – mit Syntaxprüfung (`ntpd -n`, `sshd -t`), Sicherung der alten Fassung und anschließendem Neustart bzw. Neuladen des Dienstes. Kommentare und alle Zeilen, die das Formular nicht kennt, bleiben unverändert und werden angezeigt.
 
 | Datei | Auswahl |
 |---|---|
@@ -175,7 +175,7 @@ Damit man sich nicht aussperrt, gelten neue Regeln **auf Probe**: Nach dem Laden
 
 **doas** (System-Einstellungen → „Rechte (doas)“): Regeln mit Auswahl für Konto oder Gruppe (`:wheel`), Zielbenutzer, Befehl (Programme, die es auf dem Host gibt, oder eigener Pfad), Argumente und die Optionen `nopass`, `persist`, `keepenv`, `nolog`; unter jeder Regel steht sie als deutscher Satz. Die Reihenfolge bleibt erhalten, Beschreibungen (Kommentare) wandern mit der Regel, Regeln mit `setenv` bleiben als Rohtext unverändert. `doas -C` prüft vor dem Speichern. Warnungen gibt es für `nopass` ohne Befehl, relative Befehle (doas vergleicht sie buchstäblich) und wenn du dir selbst die Rechte entziehst.
 
-**Web, Mail & Lastverteilung** (Host-Konfiguration → „Web, Mail & Lastverteilung“, nur Administratoren):
+**Web, Mail & Lastverteilung** (Dienste → „Web, Mail & Lastverteilung“, nur Administratoren):
 
 | Dienst | Formular |
 |---|---|

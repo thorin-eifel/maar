@@ -182,7 +182,7 @@ export default {
     const body = h('div', { class: 'content' }, loading());
     const newBtn = h('button', { class: 'cta', type: 'button' }, 'Portgruppe anlegen');
     const syncBtn = h('button', { class: 'secondary', type: 'button' }, 'Neu abgleichen');
-    main.append(pageHead('09 / NETZWERK', 'VM-Netze', 'Portgruppen auf veb(4) mit VLAN-Uplink und vport-Gateway. Feste Adressen der VMs landen automatisch in dhcpd, unbound und im pf-Anker „maar“.', syncBtn, newBtn), body);
+    main.append(pageHead('NETZWERK', 'VM-Netze', 'Portgruppen auf veb(4) mit VLAN-Uplink und vport-Gateway. Feste Adressen der VMs landen automatisch in dhcpd, unbound und im pf-Anker „maar“.', syncBtn, newBtn), body);
     let net = null, tab = 'pf';
     const genBox = h('div', { class: 'panel-body flush' });
     const tabs = h('div', { class: 'toolbar' });

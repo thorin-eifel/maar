@@ -16,7 +16,7 @@ export default {
     const body = h('div', { class: 'content' }, loading());
     const newBtn = h('button', { class: 'cta', type: 'button' }, 'VLAN anlegen');
     const rawBtn = h('button', { class: 'secondary', type: 'button' }, 'Interface per Text-Vorlage');
-    main.append(pageHead('10 / NETZWERK', 'Adapter & Routen', 'Schnittstellen (ifconfig), Routen und Resolver. Dauerhafte Konfiguration über hostname.if(5), angewendet mit netstart.', rawBtn, newBtn), body);
+    main.append(pageHead('NETZWERK', 'Adapter & Routen', 'Schnittstellen (ifconfig), Routen und Resolver. Dauerhafte Konfiguration über hostname.if(5), angewendet mit netstart.', rawBtn, newBtn), body);
     let data = null;
 
     async function load() {

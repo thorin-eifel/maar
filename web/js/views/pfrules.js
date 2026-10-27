@@ -2,6 +2,7 @@
 // innerhalb der Frist nimmt maar sie zurück, damit man sich nicht aussperrt.
 import { h, clear, pageHead, panel, loading, toast, toastError, dialog, field, busy, pill } from '../ui.js';
 import { get, put, post } from '../api.js';
+import { icon } from '../icons.js';
 
 const ACTIONS = [['pass', 'erlauben'], ['block', 'sperren']];
 const DIRS = [['in', 'eingehend'], ['out', 'ausgehend'], ['', 'beide Richtungen']];
@@ -34,15 +35,15 @@ function addrControl(label, value, tables, on) {
 }
 
 export function fwTabs(active) {
-  const mk = (k, l, href) => h('a', { class: 'tab', role: 'tab', href, 'aria-selected': String(k === active) }, l);
-  return h('div', { class: 'tabs', role: 'tablist', 'aria-label': 'Paketfilter' }, mk('overview', 'Übersicht', '#/firewall'), mk('rules', 'Regeln bearbeiten', '#/firewall/rules'));
+  const mk = (k, l, href, ic) => h('a', { class: 'tab', role: 'tab', href, 'aria-selected': String(k === active) }, icon(ic), l);
+  return h('div', { class: 'tabs', role: 'tablist', 'aria-label': 'Paketfilter' }, mk('overview', 'Übersicht', '#/firewall', 'summary'), mk('rules', 'Regeln bearbeiten', '#/firewall/rules', 'sliders'));
 }
 
 export default {
   title: 'Paketfilter',
   async render(main) {
     const body = h('div', { class: 'content' }, loading());
-    main.append(pageHead('11 / NETZWERK', 'Paketfilter', 'Regeln als Formular: Interfaces und Tabellen kommen vom Host. Neue Regeln gelten auf Probe und werden ohne Bestätigung automatisch zurückgenommen.'), fwTabs('rules'), body);
+    main.append(pageHead('NETZWERK', 'Paketfilter', 'Regeln als Formular: Interfaces und Tabellen kommen vom Host. Neue Regeln gelten auf Probe und werden ohne Bestätigung automatisch zurückgenommen.'), fwTabs('rules'), body);
     let timer = null;
 
     async function load() {

@@ -42,7 +42,7 @@ export default {
     const body = h('div', { class: 'content' }, loading());
     const addBtn = h('button', { class: 'cta', type: 'button' }, 'Host verbinden');
     const detail = parts[0];
-    main.append(pageHead('02 / INVENTAR', detail ? 'Host' : 'Hosts', 'Alle verbundenen maard-Instanzen auf einen Blick. Die Verwaltung eines Hosts bleibt lokal – „Öffnen“ führt zu seiner eigenen Oberfläche.', session.role === 'admin' ? addBtn : null), body);
+    main.append(pageHead('INVENTAR', detail ? 'Host' : 'Hosts', 'Alle verbundenen maard-Instanzen auf einen Blick. Die Verwaltung eines Hosts bleibt lokal – „Öffnen“ führt zu seiner eigenen Oberfläche.', session.role === 'admin' ? addBtn : null), body);
     let timer = null, charts = [];
 
     async function load() {

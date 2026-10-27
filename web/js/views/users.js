@@ -8,7 +8,7 @@ export default {
   async render(main) {
     const body = h('div', { class: 'content' }, loading());
     const newBtn = h('button', { class: 'cta', type: 'button' }, 'Benutzer anlegen');
-    main.append(pageHead('18 / HOST-KONFIGURATION', 'Benutzer & Gruppen', 'Konten mit useradd(8) und usermod(8) verwalten. Mitglieder der Gruppe wheel dürfen sich an dieser Oberfläche anmelden und doas nutzen.', newBtn), body);
+    main.append(pageHead('HOST', 'Benutzer & Gruppen', 'Konten mit useradd(8) und usermod(8) verwalten. Mitglieder der Gruppe wheel dürfen sich an dieser Oberfläche anmelden und doas nutzen.', newBtn), body);
 
     let data = null, showSystem = false;
     const userBox = h('div', { class: 'panel-body flush' });

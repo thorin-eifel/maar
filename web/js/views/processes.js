@@ -6,7 +6,7 @@ export default {
   async render(main) {
     const body = h('div', { class: 'content' }, loading());
     const auto = h('input', { type: 'checkbox', checked: true });
-    main.append(pageHead('14 / ÜBERWACHUNG', 'Prozesse', 'Laufende Prozesse nach CPU-Last (ps -axww). Signale an einzelne Prozesse senden.', h('label', { class: 'check' }, auto, 'Alle 5 s aktualisieren')), body);
+    main.append(pageHead('ÜBERWACHUNG', 'Prozesse', 'Laufende Prozesse nach CPU-Last (ps -axww). Signale an einzelne Prozesse senden.', h('label', { class: 'check' }, auto, 'Alle 5 s aktualisieren')), body);
 
     let procs = [], term = '', sort = 'cpu';
     const box = h('div', { class: 'panel-body flush' });

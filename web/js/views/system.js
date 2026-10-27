@@ -2,10 +2,10 @@ import { h, clear, pageHead, panel, table, loading, toast, toastError, confirm, 
 import { get, post, put, session } from '../api.js';
 
 export default {
-  title: 'System',
+  title: 'Host & Betrieb',
   async render(main) {
     const body = h('div', { class: 'content' }, loading());
-    main.append(pageHead('19 / HOST-KONFIGURATION', 'System', 'Kernel-Parameter (sysctl), Neustart und Ausschalten des Hosts.'), body);
+    main.append(pageHead('HOST', 'Host & Betrieb', 'Kernel-Parameter (sysctl), Neustart und Ausschalten des Hosts.'), body);
 
     let all = [], term = 'kern.';
     const box = h('div', { class: 'panel-body flush' });
