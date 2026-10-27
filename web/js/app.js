@@ -81,7 +81,7 @@ function shell() {
       // diese bleiben nur für die schmale Ansicht und das Aufklappen der Gruppe.
       const inv = label === 'Inventar';
       const list = h('div', { class: 'side-nav', id, hidden: !open },
-        inv ? inventory.el : null,
+        inv ? inventory.els.inv : label === 'Speicher' ? inventory.els.ds : label === 'Netzwerk' ? inventory.els.pg : null,
         items.filter(([, , key]) => session.role === 'admin' || (key !== 'files' && key !== 'access')).map(([t, href, key, ic]) =>
           h('a', { href, 'data-key': key, 'aria-label': t, class: inv && key !== 'console' ? 'nav-flat' : null }, icon(ic, { cls: 'nav-icon' }), h('span', { class: 'nav-text' }, t))));
       const head = h('button', { class: 'nav-label', type: 'button', 'aria-expanded': String(open), 'aria-controls': id, 'data-group': label },
@@ -171,7 +171,8 @@ async function route() {
   if (cleanup) { try { cleanup(); } catch { /* egal */ } cleanup = null; }
   for (const a of app.querySelectorAll('.side-nav a[data-key]')) {
     if ((a.dataset.key === 'dashboard' && key === '') || a.dataset.key === navKey) {
-      a.setAttribute('aria-current', 'page');
+      // Datastore/Portgruppe markiert der Baum selbst; der Menüpunkt bleibt dann unmarkiert.
+      if (key !== 'datastore' && key !== 'portgroup') a.setAttribute('aria-current', 'page');
       const list = a.closest('.side-nav'), head = list?.previousElementSibling;
       if (list?.hidden && head) setGroup(head, list, true, false);
     }
