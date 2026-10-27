@@ -42,20 +42,6 @@ function themeToggle() {
   return b;
 }
 
-function glassToggle() {
-  const root = document.documentElement;
-  const label = on => [icon('layers'), on ? 'Glas an' : 'Glas aus'];
-  const b = h('button', { class: 'mini-btn', type: 'button', 'aria-pressed': String(root.dataset.glass !== 'off') }, label(root.dataset.glass !== 'off'));
-  b.addEventListener('click', () => {
-    const on = root.dataset.glass === 'off';
-    root.dataset.glass = on ? 'on' : 'off';
-    try { localStorage.setItem('maar.glass', root.dataset.glass); } catch { /* privat */ }
-    b.setAttribute('aria-pressed', String(on));
-    b.replaceChildren(...label(on));
-  });
-  return b;
-}
-
 // Eingeklappte Menügruppen merkt sich der Browser.
 function loadCollapsed() {
   try { return new Set(JSON.parse(localStorage.getItem('maar.nav.collapsed')) || []); } catch { return new Set(); }
@@ -110,7 +96,7 @@ function shell() {
         h('div', null, logout),
         h('div', { class: 'mono' }, `maar ${session.version}`))),
     pageEl = h('div', { class: 'page' },
-      h('div', { class: 'topline' }, crumb, h('div', { class: 'top-actions' }, jobsBtn, themeToggle(), glassToggle())),
+      h('div', { class: 'topline' }, crumb, h('div', { class: 'top-actions' }, jobsBtn, themeToggle())),
       main)));
   initJobs(badge);
 }
