@@ -6,7 +6,7 @@ Host wird außer dem Basissystem nichts benötigt.
 
 [![Release](https://img.shields.io/github/v/release/thorin-eifel/maar)](https://github.com/thorin-eifel/maar/releases/latest)
 
-![maar: VM-Detailseite mit Live-Konsolenvorschau](docs/screenshot.jpg)
+![maar: VM-Detailseite mit Live-Konsolenvorschau](docs/screenshot.png)
 
 - **Virtualisierung mit vmd:** VMs anlegen und bedienen, Templates und verknüpfte Klone, Snapshots,
   Backups mit Zeitplan, serielle Konsolen im Browser mit Live-Vorschau.
