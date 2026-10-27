@@ -143,7 +143,7 @@ func (a *Access) Set(c AccessConfig, actor string, vms []string) error {
 var (
 	operatorActions = map[string]bool{"start": true, "stop": true, "pause": true, "unpause": true}
 	// Für Betrachter und Operatoren gesperrte Lesezugriffe (Konfigurationsdateien, Schlüssel).
-	readDenied = []string{"/api/file", "/api/backup/pubkey", "/api/access", "/ws/console/shell"}
+	readDenied = []string{"/api/file", "/api/backup/pubkey", "/api/access", "/api/tokens", "/ws/console/shell"}
 	operatorOK = map[string]bool{
 		"POST /api/vms/{name}/snapshots":             true,
 		"POST /api/vms/{name}/snapshots/{id}/revert": true,

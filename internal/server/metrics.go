@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -12,7 +13,10 @@ import (
 var ranges = map[string]time.Duration{"1h": time.Hour, "6h": 6 * time.Hour, "24h": 24 * time.Hour, "7d": 7 * 24 * time.Hour}
 
 func (s *Server) metricsQuery(w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Query()
+	writeJSON(w, queryMetrics(s.Metrics.Store, r.URL.Query()))
+}
+
+func queryMetrics(st *metrics.Store, q url.Values) map[string]any {
 	d, ok := ranges[q.Get("range")]
 	if !ok {
 		d = time.Hour
@@ -25,14 +29,14 @@ func (s *Server) metricsQuery(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		if strings.HasSuffix(k, "*") {
-			for _, kk := range s.Metrics.Store.Keys(strings.TrimSuffix(k, "*")) {
-				out[kk] = s.Metrics.Store.Query(kk, from)
+			for _, kk := range st.Keys(strings.TrimSuffix(k, "*")) {
+				out[kk] = st.Query(kk, from)
 			}
 			continue
 		}
-		out[k] = s.Metrics.Store.Query(k, from)
+		out[k] = st.Query(k, from)
 	}
-	writeJSON(w, map[string]any{"from": from.Unix(), "to": time.Now().Unix(), "series": out})
+	return map[string]any{"from": from.Unix(), "to": time.Now().Unix(), "series": out}
 }
 
 func (s *Server) metricsKeys(w http.ResponseWriter, r *http.Request) {

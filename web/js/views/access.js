@@ -1,6 +1,6 @@
 // Ereignisprotokoll und Rollen (admin / operator / viewer, VM-Eingrenzung).
-import { h, clear, pageHead, panel, table, pill, loading, toast, toastError, formDialog, field, busy, dateTime, debounce } from '../ui.js';
-import { get, put, session, q } from '../api.js';
+import { h, clear, pageHead, panel, table, pill, loading, toast, toastError, formDialog, field, busy, dateTime, debounce, dialog } from '../ui.js';
+import { get, put, post, del, session, q } from '../api.js';
 
 const ROLE = { admin: 'Administrator', operator: 'Operator', viewer: 'Betrachter' };
 const ROLE_HELP = {
@@ -80,6 +80,32 @@ async function rolesPanel(onSaved) {
   return panel('Rollen & VM-Zugriff', 'ADMIN · OPERATOR · BETRACHTER', box, add);
 }
 
+async function tokensPanel() {
+  const box = h('div', { class: 'panel-body flush' });
+  async function load() {
+    const list = await get('/api/tokens');
+    clear(box, table(['Name', 'Angelegt', 'Zuletzt genutzt', ''], list.map(t => h('tr', null,
+      h('td', null, h('span', { class: 'name mono' }, t.name)), h('td', null, dateTime(t.created)), h('td', null, t.lastUsed ? dateTime(t.lastUsed) : 'noch nie'),
+      h('td', { class: 'actions' }, h('button', { class: 'mini-btn danger', type: 'button', onclick: () => del(`/api/tokens/${t.id}`).then(load).catch(toastError) }, 'Widerrufen')))), 'Keine Token. Lege eines an, damit ein zentraler maard diesen Host lesen kann.'));
+  }
+  const add = h('button', { class: 'mini-btn', type: 'button', onclick: () => {
+    const name = h('input', { required: true, pattern: '[A-Za-z0-9][A-Za-z0-9._\\-]{0,40}', placeholder: 'zentrale' });
+    formDialog({ title: 'API-Token anlegen', meta: 'NUR LESEN', submit: 'Anlegen', text: 'Das Token erlaubt nur die Zusammenfassung und Messwerte dieses Hosts. Du siehst es nur jetzt.',
+      fields: [h('div', { class: 'wide' }, field('Name (z. B. der zentrale Host)', name))],
+      onSubmit: async () => {
+        const r = await post('/api/tokens', { name: name.value.trim() });
+        const copy = h('button', { class: 'secondary', type: 'button' }, 'Kopieren');
+        const close = h('button', { class: 'cta', type: 'button' }, 'Fertig');
+        const d = dialog({ title: 'Token ' + r.name, meta: 'EINMALIG', text: 'Trage es auf dem zentralen Host unter „Hosts → Host verbinden“ ein. Danach ist es nicht mehr lesbar.', body: h('pre', { class: 'codeblock wrap' }, r.token), actions: [copy, close] });
+        copy.addEventListener('click', () => navigator.clipboard?.writeText(r.token).then(() => toast('Kopiert.')).catch(() => {}));
+        close.addEventListener('click', () => d.close());
+        await load();
+      } });
+  } }, 'Token anlegen');
+  await load();
+  return panel('API-Token', 'MEHRERE HOSTS · NUR LESEN', box, add);
+}
+
 export default {
   title: 'Ereignisse & Rollen',
   async render(main) {
@@ -87,7 +113,7 @@ export default {
     main.append(pageHead('18 / WERKZEUGE', 'Ereignisse & Rollen', `Wer hat wann was getan, und wer darf was. Du bist angemeldet als ${session.user} (${ROLE[session.role] || session.role}).`), body);
     const ev = eventsPanel();
     clear(body, ev.el);
-    if (session.role === 'admin') body.append(await rolesPanel(() => ev.reload().catch(() => {})));
+    if (session.role === 'admin') body.append(await rolesPanel(() => ev.reload().catch(() => {})), await tokensPanel());
     const t = setInterval(() => ev.reload().catch(() => {}), 20000);
     return () => clearInterval(t);
   },

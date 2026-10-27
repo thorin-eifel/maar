@@ -37,6 +37,8 @@ type Server struct {
 	Audit      *log.Logger
 	Access     *Access
 	Events     *EventLog
+	Tokens     *Tokens
+	Peers      *Peers
 	Version    string
 }
 
@@ -45,6 +47,12 @@ type ctxKey struct{}
 func (s *Server) Handler() http.Handler {
 	if s.Access == nil {
 		s.Access = NewAccess(s.Host)
+	}
+	if s.Tokens == nil {
+		s.Tokens = NewTokens(s.Host)
+	}
+	if s.Peers == nil {
+		s.Peers = NewPeers(s.Host)
 	}
 	if s.Events == nil {
 		s.Events = NewEventLog(s.Host)
@@ -171,6 +179,15 @@ func (s *Server) Handler() http.Handler {
 	api("GET /api/log/follow", s.followLog)
 
 	api("GET /api/events", s.events)
+	api("GET /api/tokens", s.tokenList)
+	api("POST /api/tokens", s.tokenCreate)
+	api("DELETE /api/tokens/{id}", s.tokenDelete)
+	api("GET /api/federation/summary", s.federationSummary)
+	api("GET /api/hosts", s.hosts)
+	api("POST /api/peers/probe", s.peerProbe)
+	api("POST /api/peers", s.peerAdd)
+	api("DELETE /api/peers/{id}", s.peerDelete)
+	api("GET /api/hosts/{id}/metrics", s.hostMetrics)
 	api("GET /api/access", s.accessGet)
 	api("PUT /api/access", s.accessPut)
 
@@ -225,6 +242,25 @@ func (s *Server) static() http.Handler {
 // protect verlangt eine gültige Sitzung und bei schreibenden Zugriffen das CSRF-Token.
 func (s *Server) protect(h http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if ah := r.Header.Get("Authorization"); strings.HasPrefix(ah, "Bearer ") {
+			addr := clientAddr(r)
+			if s.Sessions.Throttled(addr) {
+				jsonErr(w, http.StatusTooManyRequests, "Zu viele Fehlversuche")
+				return
+			}
+			name := s.Tokens.Lookup(strings.TrimPrefix(ah, "Bearer "))
+			if name == "" {
+				s.Sessions.Fail(addr)
+				jsonErr(w, http.StatusUnauthorized, "Token ungültig")
+				return
+			}
+			if !tokenAllowed(r) {
+				jsonErr(w, http.StatusForbidden, "Token dürfen nur die Zusammenfassung und Messwerte lesen")
+				return
+			}
+			h(w, r.WithContext(withSession(r.Context(), &auth.Session{User: "token:" + name, Addr: addr})))
+			return
+		}
 		c, err := r.Cookie(cookieName)
 		var sess *auth.Session
 		if err == nil {

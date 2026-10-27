@@ -28,6 +28,7 @@ Auf dem Host wird außer dem Basissystem nichts benötigt.
 | Paketfilter | Status, Regeln, Tabellen (Adressen hinzufügen/entfernen), States, Regelsatz laden, pf an/aus | `pfctl` |
 | Konfiguration | 24 freigegebene Dateien + alle `/etc/hostname.*`; Syntaxprüfung vor dem Speichern, Sicherung, Konflikterkennung, „Übernehmen“-Aktion | `pfctl -nf`, `vmd -n`, `httpd -n`, `doas -C`, `sshd -t`, … |
 | Ereignisse & Rollen | Ereignisprotokoll (Anmeldungen, Aktionen, Ablehnungen; filterbar, die letzten 2000 bleiben erhalten); Rollen Administrator, Operator, Betrachter mit Eingrenzung auf bestimmte VMs | `/var/maar/access.json`, `/var/maar/events.jsonl` |
+| Hosts | mehrere maard-Instanzen in einer Übersicht: Status, CPU, Speicher, VMs, Meldungen, Ereignisse aller Hosts; Detailseite mit Verlauf; „Öffnen“ führt zur lokalen Oberfläche des Hosts | API-Token (nur lesen), Zertifikat-Fingerabdruck |
 | Protokolle | `/var/log/*` lesen, filtern, live verfolgen | Server-Sent Events |
 
 Lang laufende Befehle (Pakete, Patches, Upgrades, ISO-Downloads) laufen als **Aufgaben** im
@@ -133,6 +134,17 @@ Die Gruppe (`-group`, Standard `wheel`) entscheidet, wer sich anmelden darf; die
 | Betrachter | nur lesen – ohne Konfigurationsdateien, Schlüssel, Host-Shell und Rollenverwaltung |
 
 Ist ein Konto auf VMs eingegrenzt, sieht es nur diese in der VM-Liste und kann nur auf sie zugreifen (die Übersicht nennt weiterhin alle Namen). Eine Änderung der eigenen Rolle, die den Administrator-Zugriff entzieht, wird abgelehnt. Jede Anmeldung, verändernde Aktion und verweigerte Anfrage landet im Ereignisprotokoll und im Syslog. Aufträge (Pakete, Backups, Netz) stehen mit ihrer Ausgabe in der Aufgabenleiste; ihr Ende erscheint als Ereignis „Auftrag beendet“ (mit Fehlertext, falls fehlgeschlagen). Unter „Leistung & Alarme“ lassen sich zusätzlich die Mail-Alarme „Zugriff verweigert“ und „Anmeldung fehlgeschlagen“ einschalten (standardmäßig aus; höchstens eine gleiche Mail je 30 Minuten).
+
+## Mehrere Hosts
+
+Jeder Host betreibt sein eigenes `maard` und wird lokal verwaltet. Ein beliebiger maard dient als Zentrale und fragt die anderen (Peers) lesend ab:
+
+1. Auf dem Peer unter „Ereignisse & Rollen → API-Token“ ein Token anlegen (wird nur einmal angezeigt; gespeichert wird nur der SHA-256-Wert).
+2. In der Zentrale unter „Hosts → Host verbinden“ Adresse, Name und Token eintragen und den **Fingerabdruck** des Zertifikats holen. Vergleiche ihn mit dem Zertifikat des Peers und bestätige ihn; ändert sich das Zertifikat später, meldet die Zentrale „Zertifikat geändert“, statt blind zu vertrauen.
+
+Token dürfen nur `GET /api/federation/summary` und die Messwerte lesen (alles andere: 403) und zählen bei Fehlversuchen in die Anmeldesperre. Peers werden nur über https angesprochen (http nur auf Loopback), ohne Zugangsdaten in der URL. Die Zentrale speichert die Peer-Token in `/var/maar/peers.json` (0600) und zeigt sie nie wieder an. Abfragen laufen parallel mit 6 s Zeitlimit und 10 s Zwischenspeicher; ein ausgefallener Peer stört die übrigen nicht. Verwaltungsaktionen (VMs starten, Rollen, Konfiguration) gibt es über die Zentrale bewusst nicht – dafür ist jeder Host selbst zuständig.
+
+In der Demo gibt es zwei simulierte Peers (einer erreichbar, einer aus).
 
 ## Ausprobieren ohne OpenBSD
 

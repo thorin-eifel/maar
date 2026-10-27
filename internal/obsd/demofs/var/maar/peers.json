@@ -1,0 +1,4 @@
+[
+  {"id": "kuestenwache", "name": "kuestenwache", "url": "demo://kuestenwache", "token": "demo"},
+  {"id": "wetterwarte", "name": "wetterwarte", "url": "demo://wetterwarte", "token": "demo"}
+]
