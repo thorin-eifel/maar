@@ -85,25 +85,26 @@ export function pageHead(index, title, text, ...actions) {
 
 // Symbol zu einer Überschrift: erste passende Regel gewinnt, spezifische vor allgemeinen.
 const TITLE_ICONS = [
+  [/\bREGELN\b/, 'firewall'],
   [/Netzwerk & (Firewall|Paketfilter)|VM-Anschl.*Firewall|Firewall|Geladene Regeln|Paketfilter/i, 'firewall'],
   [/Portgruppe|Switch|VM-Netze/i, 'switch'], [/Schnittstelle|Interface|Adressen/i, 'ethernet'], [/Namensaufl|DNS|Resolver/i, 'globe'], [/Route/i, 'network'], [/Netzwerk|Netz\b/i, 'network'],
   [/Aktive Verbindungen|States/i, 'activity'], [/Statistik/i, 'chart'], [/Tabelle/i, 'layers'],
-  [/iSCSI|Fibre|\bFC\b|HBA/i, 'hba'], [/NVMe/i, 'nvme'], [/Datastore/i, 'database'], [/Disk|LUN|Datenträger|Dateisystem|Image|Installationsmedien|Gerät/i, 'disk'],
+  [/iSCSI|Fibre|\bFC\b|HBA/i, 'hba'], [/NVMe/i, 'nvme'], [/Datastore/i, 'database'], [/Disk|\bLUNs?\b|Datenträger|Dateisystem|Image|Installationsmedien|Gerät/i, 'disk'],
   [/Wiederherstellen/i, 'undo'], [/Sicherungsziel/i, 'folder'], [/Sicherung|Backup/i, 'backup'], [/Snapshot/i, 'camera'],
   [/Template|Gäste/i, 'template'], [/Konsole/i, 'terminal'], [/VM-Hardware|Hardware/i, 'cpu'], [/Virtuelle Maschine|\bVMs?\b/i, 'vm'],
   [/CPU|Prozessor/i, 'cpu'], [/Speicher/i, 'memory'], [/Load|Last/i, 'gauge'], [/Prozess/i, 'tasks'],
-  [/Ereignis|Meldung/i, 'events'], [/Benachrichtigung|Mail/i, 'mail'], [/Regeln|Schwellwert|Alarm/i, 'bell'], [/Verlauf|Zeitquelle|Zeitdienst|Geplante|Zeitplan|Laufzeit|Uhr/i, 'clock'], [/Zeit-Sensor|Sensor/i, 'gauge'],
+  [/Ereignis|Meldung/i, 'events'], [/Benachrichtigung|Mail/i, 'mail'], [/Schwellwert|Alarm/i, 'bell'], [/Verlauf|Zeitquelle|Zeitdienst|Geplante|Zeitplan|Laufzeit|Uhr/i, 'clock'], [/Zeit-Sensor|Sensor/i, 'gauge'],
   [/Constraint/i, 'balance'], [/Energie|Herunterfahren/i, 'power'], [/Kernel|Parameter|Steuerung|Allgemein|Konfiguration|Einstellung/i, 'sliders'],
   [/Token|Schlüssel|Key/i, 'key'], [/Rollen|Zugriff|Sicherheit|Authentif/i, 'shield-check'], [/Konten|Gruppen|Benutzer/i, 'users'],
   [/Systempatch|Wartung|Patch/i, 'wrench'], [/Paket installieren|Download/i, 'download'], [/Paket/i, 'package'], [/Dienst/i, 'toggle'],
   [/Erzeugte|Vorschau|Datei(en)?\b/i, 'code'], [/Verwendet von/i, 'link'], [/Hosts?\b|Peers?/i, 'datacenter'], [/System|Status/i, 'activity'], [/log\b|Protokoll/i, 'logs'], [/^[\w-]+(\.[\w-]+)+$/, 'globe'],
 ];
-export const titleIcon = title => TITLE_ICONS.find(([re]) => re.test(String(title)))?.[1] || null;
+export const titleIcon = (title, meta = '') => TITLE_ICONS.find(([re]) => re.test(`${title} ${meta}`))?.[1] || null;
 
 export function panel(title, meta, body, ...tools) {
   return h('section', { class: 'panel' },
     h('div', { class: 'panel-head' },
-      h('div', null, meta ? h('span', { class: 'meta' }, meta) : null, h('h2', null, titleIcon(title) ? icon(titleIcon(title), { cls: 'title-icon' }) : null, title)),
+      h('div', null, meta ? h('span', { class: 'meta' }, meta) : null, h('h2', null, titleIcon(title, meta) ? icon(titleIcon(title, meta), { cls: 'title-icon' }) : null, title)),
       tools.length ? h('div', { class: 'toolbar' }, tools) : null),
     body);
 }

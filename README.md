@@ -18,6 +18,12 @@ Host wird außer dem Basissystem nichts benötigt.
   automatisch zurückgenommen.
 - **Mehrere Hosts** in einer Übersicht, Rollen mit VM-Eingrenzung, Ereignisprotokoll, Mail-Alarme.
 
+## Dokumentation
+
+Die vollständige, bebilderte Anleitung für Einsteiger und Administratoren liegt unter
+[**docs/**](docs/README.md): Erste Schritte, Grundlagen, VMs, Netzwerk, Speicher und Backup, Host und Dienste,
+Überwachung, Sicherheit, Betrieb und Referenz.
+
 ## Schnellstart
 
 Als root auf dem OpenBSD-Host (amd64 oder arm64):
@@ -46,6 +52,7 @@ temporären Sandbox, die VM-Konsolen sind simuliert.
 
 ## Inhalt
 
+- [Dokumentation](#dokumentation)
 - [Funktionen im Überblick](#funktionen-im-überblick)
 - [Virtuelle Maschinen](#virtuelle-maschinen): [Templates](#templates-und-gastanpassung) ·
   [Snapshots](#snapshots) · [Backup](#backup) · [Leistung & Alarme](#leistung--alarme)

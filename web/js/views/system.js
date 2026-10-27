@@ -5,7 +5,8 @@ export default {
   title: 'Host & Betrieb',
   async render(main) {
     const body = h('div', { class: 'content' }, loading());
-    main.append(pageHead('HOST', 'Host & Betrieb', 'Kernel-Parameter (sysctl), Neustart und Ausschalten des Hosts.'), body);
+    main.append(pageHead('HOST', 'Host & Betrieb', 'Kernel-Parameter (sysctl), Neustart und Ausschalten des Hosts sowie eine Login-Shell im Browser.',
+      session.role === 'admin' ? h('a', { class: 'mini-btn', href: '#/console/shell' }, 'Host-Shell') : null), body);
 
     let all = [], term = 'kern.';
     const box = h('div', { class: 'panel-body flush' });
