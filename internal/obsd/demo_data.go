@@ -286,6 +286,16 @@ machdep.allowaperture=0
 vm.swapencrypt.enable=1
 hw.perfpolicy=auto
 hw.smt=0
+kern.bufcachepercent=20
+kern.maxthread=1310
+net.inet.ip.redirect=1
+net.inet.ip.sourceroute=0
+net.inet.icmp.errppslimit=100
+net.inet.tcp.sack=1
+net.inet.udp.recvspace=41600
+kern.allowkmem=0
+kern.audio.record=0
+vm.malloc_conf=
 `
 
 const demoDmesg = `OpenBSD 8.0 (GENERIC.MP) #54: Sun Oct 12 21:13:46 MDT 2026

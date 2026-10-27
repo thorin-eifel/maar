@@ -316,3 +316,91 @@ func TestMailTablesForm(t *testing.T) {
 		t.Error("virtuelle Adresse ohne @ akzeptiert")
 	}
 }
+
+func TestSysctlConfForm(t *testing.T) {
+	h := newDemoHost(t)
+	ctx := context.Background()
+	v, err := h.SysctlConf(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(v.Entries) != 3 || v.Entries[0].Key != "net.inet.ip.forwarding" || v.Entries[2].Value != "7030" || v.Current["kern.maxfiles"] != "7030" || len(v.All) < 15 || len(v.Catalog) < 10 {
+		t.Fatalf("Ansicht: %+v catalog=%d all=%d", v.Entries, len(v.Catalog), len(v.All))
+	}
+	for _, c := range v.Catalog {
+		if c.Current == "" && c.Key != "vm.malloc_conf" {
+			t.Errorf("Katalogeintrag ohne aktuellen Wert: %s", c.Key)
+		}
+	}
+	// Ändern, hinzufügen, sofort anwenden
+	es := v.Entries
+	es[2].Value = "20000"
+	es = append(es, SysctlEntry{Key: "kern.somaxconn", Value: "1024"}, SysctlEntry{Key: "net.inet.tcp.sack", Value: "0"})
+	res, err := h.SaveSysctlConf(ctx, es, true, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, _ := h.readFile(sysctlConfPath)
+	for _, w := range []string{"net.inet.ip.forwarding=1", "hw.smt=0", "kern.maxfiles=20000", "kern.somaxconn=1024", "net.inet.tcp.sack=0"} {
+		if !strings.Contains(got, w) {
+			t.Errorf("%q fehlt:\n%s", w, got)
+		}
+	}
+	if !strings.Contains(res.Applied, "3 Wert") {
+		t.Errorf("Anwenden: %+v", res)
+	}
+	out, _ := h.out(ctx, "sysctl", "-n", "kern.somaxconn")
+	if strings.TrimSpace(out) != "1024" {
+		t.Errorf("laufender Wert: %q", out)
+	}
+	// Entfernen: Datei ohne Eintrag, Hinweis auf den laufenden Wert
+	v, _ = h.SysctlConf(ctx)
+	var keep []SysctlEntry
+	for _, e := range v.Entries {
+		if e.Key != "hw.smt" {
+			keep = append(keep, e)
+		}
+	}
+	r2, err := h.SaveSysctlConf(ctx, keep, false, false)
+	if err != nil || !strings.Contains(strings.Join(r2.Warnings, "|"), "bis zum Neustart") || !strings.Contains(r2.Applied, "nächsten Start") {
+		t.Fatalf("Entfernen: %v %+v", err, r2)
+	}
+	// Risiko-Hinweis (mit frisch gelesenen Zeilennummern)
+	v, _ = h.SysctlConf(ctx)
+	keep = v.Entries
+	r3, err := h.SaveSysctlConf(ctx, append(append([]SysctlEntry{}, keep...), SysctlEntry{Key: "kern.allowkmem", Value: "1"}), false, true)
+	if err != nil || !strings.Contains(strings.Join(r3.Warnings, "|"), "Sicherheit") {
+		t.Errorf("Risiko-Hinweis: %v %+v", err, r3)
+	}
+	// Ablehnungen; die Datei bleibt unverändert und es wird nichts gesetzt
+	before, _ := h.readFile(sysctlConfPath)
+	for i, bad := range []SysctlEntry{
+		{Key: "gibt.es.nicht", Value: "1"},
+		{Key: "kern.maxfiles", Value: "1"},                     // doppelt
+		{Key: "net.inet.tcp.sack", Value: "2"},                 // bool
+		{Key: "kern.somaxconn", Value: "abc"},                  // Zahl
+		{Key: "kern.bufcachepercent", Value: "99"},             // Bereich
+		{Key: "machdep.allowaperture", Value: "7"},             // enum
+		{Key: "kern.hostname", Value: "a b"},                   // Leerzeichen
+		{Key: "kern.hostname", Value: "x\nkern.securelevel=2"}, // Einschleusung
+		{Key: "kern.ostype", Value: "Linux"},                   // nur lesbar
+		{Key: "hw.machine", Value: "arm"},                      // nur lesbar
+		{Key: "kern.maxproc", Value: ""},                       // leer
+		{Raw: "kern.securelevel=2"},                            // neue Rohzeile
+		{Key: "kern.securelevel+", Value: "1"},
+	} {
+		list := append(append([]SysctlEntry{}, keep...), bad)
+		if i == 1 {
+			list = append(keep, bad)
+		}
+		if _, err := h.SaveSysctlConf(ctx, list, true, false); err == nil {
+			t.Errorf("Fall %d akzeptiert: %+v", i, bad)
+		}
+	}
+	if after, _ := h.readFile(sysctlConfPath); after != before {
+		t.Error("abgelehnte Eingaben haben sysctl.conf verändert")
+	}
+	if out, _ := h.out(ctx, "sysctl", "-n", "kern.maxproc"); strings.TrimSpace(out) != "1310" {
+		t.Errorf("abgelehnte Eingabe änderte den laufenden Wert: %q", out)
+	}
+}

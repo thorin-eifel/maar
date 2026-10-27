@@ -1,9 +1,9 @@
-// Zeit, Namen & SSH: Formulare für ntpd.conf, resolv.conf, hosts und sshd_config.
+// System-Einstellungen: Formulare für ntpd.conf, resolv.conf, hosts, sshd_config, doas.conf und sysctl.conf.
 // Die Auswahl kommt vom Host; die Dateien schreibt maar im Hintergrund (mit Prüfung und Sicherung).
 import { h, clear, pageHead, panel, table, pill, loading, toast, toastError, dialog, field, busy } from '../ui.js';
 import { get, put } from '../api.js';
 
-const TABS = [['ntp', 'Zeit (ntpd)'], ['dns', 'Namensauflösung'], ['hosts', 'Hosts-Datei'], ['ssh', 'SSH-Zugang'], ['doas', 'Rechte (doas)']];
+const TABS = [['ntp', 'Zeit (ntpd)'], ['dns', 'Namensauflösung'], ['hosts', 'Hosts-Datei'], ['ssh', 'SSH-Zugang'], ['doas', 'Rechte (doas)'], ['sysctl', 'Kernel (sysctl)']];
 const num = (v, d = 0) => Number.isFinite(Number(v)) && v !== '' ? Number(v) : d;
 
 // Eine Liste bearbeitbarer Zeilen mit „Hinzufügen“.
@@ -34,12 +34,12 @@ function showResult(r, extra) {
 }
 
 export default {
-  title: 'Zeit, Namen & SSH',
+  title: 'System-Einstellungen',
   async render(main, parts) {
     let pending = null;
     let tab = TABS.some(t => t[0] === parts[0]) ? parts[0] : 'ntp';
     const tabsEl = h('div', { class: 'tabs', role: 'tablist', 'aria-label': 'Bereiche' }), body = h('div', { class: 'content' }, loading());
-    main.append(pageHead('20 / HOST-KONFIGURATION', 'Zeit, Namen & SSH', 'Zeitsynchronisation, DNS, Hosts-Datei und SSH-Server als Formulare. Zur Auswahl steht nur, was es auf diesem Host gibt; maar schreibt die Dateien im Hintergrund und prüft sie vorher.'), tabsEl, body);
+    main.append(pageHead('20 / HOST-KONFIGURATION', 'System-Einstellungen', 'Zeitsynchronisation, DNS, Hosts-Datei, SSH-Server, doas-Rechte und Kernel-Parameter als Formulare. Zur Auswahl steht nur, was es auf diesem Host gibt; maar schreibt die Dateien im Hintergrund und prüft sie vorher.'), tabsEl, body);
 
     function drawTabs() {
       clear(tabsEl, TABS.map(([k, l]) => {
@@ -73,7 +73,7 @@ export default {
       clear(body, loading());
       try {
         const v = await get(`/api/conf/${tab === 'dns' ? 'resolv' : tab}`);
-        await ({ ntp: drawNTP, dns: drawDNS, hosts: drawHosts, ssh: drawSSH, doas: drawDoas })[tab](v);
+        await ({ ntp: drawNTP, dns: drawDNS, hosts: drawHosts, ssh: drawSSH, doas: drawDoas, sysctl: drawSysctl })[tab](v);
         if (pending) {
           body.prepend(h('div', { class: 'content-stack' }, pending.applied ? h('div', { class: 'note ok', role: 'status' }, pending.applied) : null,
             pending.warns.length ? h('div', { class: 'note warn', role: 'status' }, h('strong', null, 'Bitte beachten: '), pending.warns.map(w => h('div', null, w))) : null));
@@ -253,6 +253,47 @@ export default {
         h('div', { class: 'note' }, h('strong', null, 'So wertet doas aus: '), 'von oben nach unten, es gilt ', h('strong', null, 'die letzte passende Regel'), '. Ohne passende Regel ist alles verboten. Regeln mit setenv oder anderer Sonderschreibweise bleiben als Rohtext unverändert stehen.'),
         panel('Rechte', 'DOAS.CONF', h('div', { class: 'panel-body' }, box)),
         actions('doas', () => ({ rules: c.rules }), { onSaved: load }));
+    }
+
+    // ---- sysctl ----
+    function drawSysctl(v) {
+      const items = v.entries.map(e => ({ ...e }));
+      const cat = Object.fromEntries(v.catalog.map(c => [c.key, c]));
+      const st = { now: true };
+      const box = h('div');
+      const draw = () => clear(box, h('div', { class: 'table-wrap' }, h('table', { class: 'table' },
+        h('thead', null, h('tr', null, ['Parameter', 'Wert', 'Läuft gerade', ''].map(t => h('th', { scope: 'col' }, t)))),
+        h('tbody', null, items.map((e, i) => {
+          if (e.raw) return h('tr', null, h('td', { colSpan: 3 }, h('code', { class: 'mono' }, e.raw), h('span', { class: 'sub' }, 'Das Formular versteht diese Zeile nicht und lässt sie unverändert.')), h('td', { class: 'actions' }, h('button', { class: 'mini-btn danger', type: 'button', onclick: () => { items.splice(i, 1); draw(); } }, 'Entfernen')));
+          const c = cat[e.key];
+          const control = !c ? inp(e.value, x => { e.value = x.trim(); draw2(); }, { class: 'mono', 'aria-label': 'Wert' })
+            : c.kind === 'bool' ? sel([['0', 'aus (0)'], ['1', 'an (1)']], e.value, x => { e.value = x; draw2(); })
+            : c.kind === 'enum' ? sel(c.options.map(o => [o, o]), e.value, x => { e.value = x; draw2(); })
+            : inp(e.value, x => { e.value = x.trim(); draw2(); }, { type: 'number', min: c.min, max: c.max, class: 'mono', 'aria-label': 'Wert' });
+          const live = h('td', { class: 'mono' });
+          const draw2 = () => { const cur = v.current[e.key]; live.replaceChildren(cur ?? '–', ' ', cur !== undefined && cur !== e.value ? pill('warn', 'weicht ab') : ''); };
+          draw2();
+          return h('tr', null, h('td', null, h('span', { class: 'name mono' }, e.key), c ? h('span', { class: 'sub' }, `${c.label} – ${c.description}`) : null, c?.risk ? h('span', { class: 'sub' }, '⚠ ' + c.risk) : null),
+            h('td', null, control), live, h('td', { class: 'actions' }, h('button', { class: 'mini-btn danger', type: 'button', onclick: () => { items.splice(i, 1); draw(); } }, 'Entfernen')));
+        }).filter(Boolean)))));
+      draw();
+      const used = () => new Set(items.map(i => i.key));
+      const pick = h('select', { 'aria-label': 'Häufigen Parameter hinzufügen' }, h('option', { value: '' }, 'Häufigen Parameter hinzufügen …'),
+        ...[...new Set(v.catalog.map(c => c.group))].map(g => h('optgroup', { label: g }, v.catalog.filter(c => c.group === g).map(c => h('option', { value: c.key }, `${c.label} (${c.key})`)))));
+      pick.addEventListener('change', () => { const c = cat[pick.value]; if (!c) return; if (used().has(c.key)) { toast('Schon in der Liste.'); } else { items.push({ id: 0, key: c.key, value: c.current }); v.current[c.key] = c.current; draw(); } pick.value = ''; });
+      const other = h('input', { list: 'sysctl-all', placeholder: 'Anderer Parameter, z. B. net.inet.ip.mtudisc', class: 'mono', 'aria-label': 'Anderer Parameter' });
+      const addOther = h('button', { class: 'mini-btn', type: 'button' }, 'Hinzufügen');
+      addOther.addEventListener('click', () => {
+        const k = other.value.trim();
+        if (!v.all.includes(k)) { toastError(new Error(`„${k}“ gibt es in diesem Kernel nicht.`)); return; }
+        if (used().has(k)) { toast('Schon in der Liste.'); return; }
+        // aktueller Wert aus der Systemliste ist hier nicht geladen – Wert wird beim Hinzufügen abgefragt
+        get('/api/sysctl').then(list => { const cur = list.find(s => s.name === k)?.value ?? ''; v.current[k] = cur; items.push({ id: 0, key: k, value: cur }); other.value = ''; draw(); }).catch(toastError);
+      });
+      clear(body,
+        h('div', { class: 'note' }, h('strong', null, 'So funktioniert es: '), 'Einträge in /etc/sysctl.conf werden bei jedem Start gesetzt. Mit „Sofort anwenden“ setzt maar die geänderten Werte zusätzlich im laufenden Kernel. Ein Parameter muss schreibbar sein – nur lesbare lehnt maar ab, bevor etwas geschrieben wird.'),
+        panel('Kernel-Parameter', '/ETC/SYSCTL.CONF', h('div', { class: 'panel-body' }, h('div', { class: 'toolbar' }, pick, other, addOther), h('datalist', { id: 'sysctl-all' }, v.all.map(k => h('option', { value: k }))), box)),
+        actions('sysctl', () => ({ entries: items.map(e => ({ id: e.id, key: e.key || '', value: e.value || '', raw: e.raw })), applyNow: st.now }), { onSaved: load, extra: chk('Geänderte Werte sofort anwenden', true, x => { st.now = x; }) }));
     }
 
     drawTabs();

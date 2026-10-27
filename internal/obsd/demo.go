@@ -41,6 +41,7 @@ type DemoRunner struct {
 	sanDuid map[string]string // SAN-Disk → DUID (nach disklabel)
 	sanMnt  map[string]string // Gerät → Einhängepunkt der Datastores
 	sanSeq  int
+	sysOv   map[string]string // per sysctl gesetzte Werte
 	ifs     map[string]string // per netstart erzeugte oder zerstörte Interfaces ("" = zerstört)
 
 	// Zähler für Leistungsdaten
@@ -381,6 +382,13 @@ func (d *DemoRunner) sysctl(args []string) (Result, error) {
 		"kern.version": "OpenBSD 8.0 (GENERIC.MP) #54: Sun Oct 12 21:13:46 MDT 2026\n    deraadt@amd64.openbsd.org:/usr/src/sys/arch/amd64/compile/GENERIC.MP\n",
 		"hw.disknames": d.disknames(),
 	}
+	for _, l := range lines(demoSysctlExtra) {
+		k, v, _ := strings.Cut(l, "=")
+		vals[k] = v
+	}
+	for k, v := range d.sysOv {
+		vals[k] = v
+	}
 	if len(args) > 0 && args[0] == "-a" {
 		keys := make([]string, 0, len(vals))
 		for k := range vals {
@@ -393,7 +401,6 @@ func (d *DemoRunner) sysctl(args []string) (Result, error) {
 		for _, k := range keys {
 			fmt.Fprintf(&b, "%s=%s\n", k, vals[k])
 		}
-		b.WriteString(demoSysctlExtra)
 		return ok(b.String())
 	}
 	n := args[0] == "-n"
@@ -402,8 +409,27 @@ func (d *DemoRunner) sysctl(args []string) (Result, error) {
 	}
 	var b strings.Builder
 	for _, k := range args {
-		if strings.Contains(k, "=") {
-			return ok(strings.Replace(k, "=", ": -> ", 1) + "\n")
+		if name, v, set := strings.Cut(k, "="); set {
+			if _, known := vals[name]; !known {
+				return fail("sysctl", "sysctl: unknown oid '"+name+"'\n", 1)
+			}
+			for _, ro := range []string{"kern.ostype", "kern.osrelease", "kern.version", "kern.boottime", "hw.machine", "hw.model", "hw.ncpuonline", "hw.physmem", "hw.disknames"} {
+				if name == ro {
+					return fail("sysctl", "sysctl: "+name+": Operation not permitted\n", 1)
+				}
+			}
+			if cur := vals[name]; cur != "" && !strings.ContainsAny(cur, " ,:") && (cur[0] >= '0' && cur[0] <= '9') && (v == "" || ((v[0] < '0' || v[0] > '9') && v[0] != '-')) {
+				return fail("sysctl", "sysctl: "+name+": Invalid argument\n", 1)
+			}
+			if d.sysOv == nil {
+				d.sysOv = map[string]string{}
+			}
+			d.sysOv[name] = v
+			b.WriteString(name + ": " + vals[name] + " -> " + v + "\n")
+			continue
+		}
+		if _, known := vals[k]; !known && k != "hw.sensors" {
+			return fail("sysctl", "sysctl: unknown oid '"+k+"'\n", 1)
 		}
 		if n {
 			b.WriteString(vals[k] + "\n")
