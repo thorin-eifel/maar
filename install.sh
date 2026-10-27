@@ -85,7 +85,18 @@ fi
 
 if [ "$UPDATE" = no ] || [ "$RUNNING" = yes ]; then
 	echo "==> Starte Dienst"
-	rcctl start maard || die "Start fehlgeschlagen – siehe /var/log/daemon"
+	rcctl start maard || started=no
+	sleep 2
+	if [ "${started:-yes}" = no ] || ! rcctl check maard >/dev/null 2>&1; then
+		echo >&2
+		echo "maar-install: Der Dienst läuft nicht. Letzte Meldungen:" >&2
+		grep -E 'maar|maard' /var/log/daemon 2>/dev/null | tail -n 15 >&2
+		echo >&2
+		echo "Im Vordergrund starten, um die Fehlermeldung zu sehen:" >&2
+		echo "  /usr/local/sbin/maard -listen :9443" >&2
+		echo "Zum Eingrenzen ohne pledge(2):  /usr/local/sbin/maard -no-pledge -listen :9443" >&2
+		exit 1
+	fi
 fi
 
 HOST="$(hostname)"
