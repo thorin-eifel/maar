@@ -86,6 +86,7 @@ func main() {
 	}
 
 	host := obsd.NewHost(runner, root, *demo)
+	host.RecoverPF(context.Background()) // unbestätigte pf-Änderung eines beendeten Laufs zurücknehmen
 	host.VMDir = filepath.Clean(*vmdir)
 	if *demo {
 		// Demo-Konto wird wie ein wheel-Mitglied behandelt.

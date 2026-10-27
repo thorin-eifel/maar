@@ -20,6 +20,7 @@ type ConfResult struct {
 	Warnings []string `json:"warnings"`
 	Output   string   `json:"output,omitempty"`
 	Applied  string   `json:"applied,omitempty"`
+	Pending  int      `json:"pendingSeconds,omitempty"` // Frist zum Bestätigen
 }
 
 func splitFileLines(src string) []string {

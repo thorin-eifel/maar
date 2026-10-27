@@ -1,12 +1,14 @@
 import { h, clear, pageHead, panel, table, pill, loading, toast, toastError, confirm, formDialog, field, busy } from '../ui.js';
 import { get, post } from '../api.js';
+import { fwTabs } from './pfrules.js';
 
 export default {
   title: 'Paketfilter',
-  async render(main) {
+  async render(main, parts) {
+    if (parts && parts[0] === 'rules') return (await import('./pfrules.js')).default.render(main);
     const body = h('div', { class: 'content' }, loading());
-    const editBtn = h('a', { class: 'cta', href: '#/files?path=/etc/pf.conf' }, 'pf.conf bearbeiten');
-    main.append(pageHead('11 / NETZWERK', 'Paketfilter', 'pf(4) über pfctl(8): Status, geladene Regeln, Tabellen und aktive Verbindungen. Änderungen am Regelsatz werden vor dem Laden mit pfctl -n geprüft.', editBtn), body);
+    const editBtn = h('a', { class: 'cta', href: '#/files?path=/etc/pf.conf' }, 'pf.conf als Text (Experte)');
+    main.append(pageHead('11 / NETZWERK', 'Paketfilter', 'pf(4) über pfctl(8): Status, geladene Regeln, Tabellen und aktive Verbindungen. Änderungen am Regelsatz werden vor dem Laden mit pfctl -n geprüft.', editBtn), fwTabs('overview'), body);
 
     const tableBox = h('div', { class: 'panel-body flush' }, h('div', { class: 'empty' }, 'Tabelle wählen.'));
     let current = null;

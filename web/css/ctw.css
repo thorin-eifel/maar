@@ -339,3 +339,9 @@ details.expert{margin-top:14px}details.expert summary{cursor:pointer;color:var(-
 details.expert pre{margin:10px 0}
 .cf-rows{display:grid;gap:10px}.cf-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding-bottom:10px;border-bottom:1px solid var(--line-soft)}.cf-fields{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;flex:1}.cf-fields .field{min-width:150px}.checks .check{min-width:200px}
 .note.ok{border-color:oklch(62% .15 150);background:var(--surface-soft)}
+/* Paketfilter- und doas-Regeln */
+.pf-rule.off{opacity:.55}
+.rule-line{display:block;font-size:12px;color:var(--muted);overflow-wrap:anywhere;margin-top:6px}
+.pf-pending{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;position:sticky;top:63px;z-index:15}
+a.tab{text-decoration:none;display:inline-block}
+.cf-fields .field{flex:1 1 170px;max-width:270px}.cf-fields .check{align-self:center}

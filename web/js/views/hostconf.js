@@ -3,7 +3,7 @@
 import { h, clear, pageHead, panel, table, pill, loading, toast, toastError, dialog, field, busy } from '../ui.js';
 import { get, put } from '../api.js';
 
-const TABS = [['ntp', 'Zeit (ntpd)'], ['dns', 'Namensauflösung'], ['hosts', 'Hosts-Datei'], ['ssh', 'SSH-Zugang']];
+const TABS = [['ntp', 'Zeit (ntpd)'], ['dns', 'Namensauflösung'], ['hosts', 'Hosts-Datei'], ['ssh', 'SSH-Zugang'], ['doas', 'Rechte (doas)']];
 const num = (v, d = 0) => Number.isFinite(Number(v)) && v !== '' ? Number(v) : d;
 
 // Eine Liste bearbeitbarer Zeilen mit „Hinzufügen“.
@@ -73,7 +73,7 @@ export default {
       clear(body, loading());
       try {
         const v = await get(`/api/conf/${tab === 'dns' ? 'resolv' : tab}`);
-        await ({ ntp: drawNTP, dns: drawDNS, hosts: drawHosts, ssh: drawSSH })[tab](v);
+        await ({ ntp: drawNTP, dns: drawDNS, hosts: drawHosts, ssh: drawSSH, doas: drawDoas })[tab](v);
         if (pending) {
           body.prepend(h('div', { class: 'content-stack' }, pending.applied ? h('div', { class: 'note ok', role: 'status' }, pending.applied) : null,
             pending.warns.length ? h('div', { class: 'note warn', role: 'status' }, h('strong', null, 'Bitte beachten: '), pending.warns.map(w => h('div', null, w))) : null));
@@ -211,6 +211,48 @@ export default {
           field('Protokollstufe', sel(dflt('logLevel', ['QUIET', 'FATAL', 'ERROR', 'INFO', 'VERBOSE', 'DEBUG'].map(x => [x, x])), c.logLevel, x => { c.logLevel = x; })))),
         v.preserved.length ? h('div', { class: 'note' }, 'Unverändert bleiben: ', h('code', { class: 'mono' }, v.preserved.join(' · '))) : null,
         actions('ssh', () => ({ ...c, ports: portItems.map(i => i.p).filter(Boolean), listenAddress: listenItems.map(i => i.a).filter(Boolean) }), { onSaved: load }));
+    }
+
+
+    // ---- doas ----
+    function drawDoas(v) {
+      const c = JSON.parse(JSON.stringify(v.conf));
+      const who = [...v.users.map(u => [u, `Benutzer ${u}`]), ...v.groups.map(g => [`:${g}`, `Gruppe ${g}`])];
+      const asOpts = [['', 'root (Standard)'], ...v.users.filter(u => u !== 'root').map(u => [u, u])];
+      const describe = r => {
+        if (r.raw) return 'Erweiterte Regel – das Formular lässt sie unverändert.';
+        const wer = r.identity.startsWith(':') ? `Gruppe ${r.identity.slice(1)}` : `Benutzer ${r.identity}`;
+        const was = r.cmd ? `${r.cmd}${r.args?.length ? ' ' + r.args.join(' ') : ''}` : 'beliebige Befehle';
+        const opts = [r.nopass ? 'ohne Passwort' : r.persist ? 'Passwort wird einige Minuten gemerkt' : 'mit Passwort', r.keepenv ? 'Umgebung bleibt' : null, r.nolog ? 'nicht protokolliert' : null].filter(Boolean).join(', ');
+        return `${wer} ${r.action === 'permit' ? 'darf' : 'darf nicht'} ${was} als ${r.as || 'root'} ausführen (${opts}).`;
+      };
+      const box = h('div', { class: 'cf-rows' });
+      const draw = () => box.replaceChildren(...c.rules.map((r, i) => {
+        const text = h('p', { class: 'hint rule-line' }, describe(r));
+        const upd = () => { text.textContent = describe(r); };
+        const move = d => () => { const j = i + d; if (j < 0 || j >= c.rules.length) return; [c.rules[i], c.rules[j]] = [c.rules[j], c.rules[i]]; draw(); };
+        const ctl = h('div', { class: 'stack' }, h('div', { class: 'toolbar' }, h('button', { class: 'mini-btn', type: 'button', disabled: i === 0, 'aria-label': 'nach oben', onclick: move(-1) }, '↑'),
+          h('button', { class: 'mini-btn', type: 'button', disabled: i === c.rules.length - 1, 'aria-label': 'nach unten', onclick: move(1) }, '↓'), h('button', { class: 'mini-btn danger', type: 'button', onclick: () => { c.rules.splice(i, 1); draw(); } }, 'Entfernen')));
+        if (r.raw) return h('div', { class: 'cf-row' }, h('div', { class: 'cf-fields' }, h('code', { class: 'mono' }, r.raw), text), ctl);
+        const cmdKnown = !r.cmd || v.commands.includes(r.cmd);
+        const cmdSel = sel([['', 'Alle Befehle'], ...v.commands.map(x => [x, x]), ['__other', 'Anderer Pfad …']], cmdKnown ? r.cmd : '__other', x => { if (x === '__other') { cmdIn.hidden = false; r.cmd = cmdIn.value.trim(); } else { cmdIn.hidden = true; r.cmd = x; } if (!r.cmd) { r.args = []; argIn.value = ''; } argIn.disabled = !r.cmd; upd(); });
+        const cmdIn = h('input', { class: 'mono', value: cmdKnown ? '' : r.cmd, hidden: cmdKnown, placeholder: '/usr/local/bin/programm', 'aria-label': 'Befehlspfad' });
+        cmdIn.addEventListener('input', () => { r.cmd = cmdIn.value.trim(); upd(); });
+        const argIn = h('input', { class: 'mono', value: (r.args || []).join(' '), disabled: !r.cmd, placeholder: 'nur diese Argumente, z. B. status', 'aria-label': 'Argumente' });
+        argIn.addEventListener('input', () => { r.args = argIn.value.split(/\s+/).filter(Boolean); upd(); });
+        return h('div', { class: 'cf-row' }, h('div', { class: 'cf-fields' },
+          field('Aktion', sel([['permit', 'erlauben'], ['deny', 'verbieten']], r.action, x => { r.action = x; upd(); })),
+          field('Wer', sel(who, r.identity, x => { r.identity = x; upd(); })), field('Als', sel(asOpts, r.as, x => { r.as = x; upd(); })),
+          field('Befehl', h('div', { class: 'stack' }, cmdSel, cmdIn)), field('Argumente', argIn),
+          h('div', { class: 'stack' }, chk('ohne Passwort (nopass)', r.nopass, x => { r.nopass = x; if (x) r.persist = false; draw(); }), chk('Passwort merken (persist)', r.persist, x => { r.persist = x; if (x) r.nopass = false; draw(); }),
+            chk('Umgebung behalten (keepenv)', r.keepenv, x => { r.keepenv = x; upd(); }), chk('nicht protokollieren (nolog)', r.nolog, x => { r.nolog = x; upd(); })),
+          field('Beschreibung', h('input', { value: r.comment, maxlength: 200, 'aria-label': 'Beschreibung', oninput: e => { r.comment = e.target.value; } })), text), ctl);
+      }), h('div', null, h('button', { class: 'mini-btn', type: 'button', onclick: () => { c.rules.push({ action: 'permit', identity: v.groups.includes('wheel') ? ':wheel' : v.users[0], as: '', cmd: '', args: [], nopass: false, nolog: false, persist: true, keepenv: false, comment: '' }); draw(); } }, 'Regel hinzufügen')));
+      draw();
+      clear(body,
+        h('div', { class: 'note' }, h('strong', null, 'So wertet doas aus: '), 'von oben nach unten, es gilt ', h('strong', null, 'die letzte passende Regel'), '. Ohne passende Regel ist alles verboten. Regeln mit setenv oder anderer Sonderschreibweise bleiben als Rohtext unverändert stehen.'),
+        panel('Rechte', 'DOAS.CONF', h('div', { class: 'panel-body' }, box)),
+        actions('doas', () => ({ rules: c.rules }), { onSaved: load }));
     }
 
     drawTabs();

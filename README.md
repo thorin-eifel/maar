@@ -163,6 +163,12 @@ Alles andere im vm.conf-Block bleibt unverändert (Netzwerkadapter mit MAC, `boo
 
 Der SSH-Teil schützt vor dem Aussperren: Abgelehnt werden Einstellungen, bei denen keine Anmeldemethode übrig bliebe, du selbst nicht mehr in `AllowUsers`/`AllowGroups` stündest oder du die Passwort-Anmeldung abschaltest, ohne einen Schlüssel in `~/.ssh/authorized_keys` zu haben. Geändert wird nur der globale Teil vor dem ersten `Match`; Match-Blöcke bleiben, und ein Hinweis nennt sie. Bei geänderten Ports prüft maar, ob `pf.conf` sie erwähnt.
 
+**Paketfilter-Regeln** (Netzwerk → Paketfilter → „Regeln bearbeiten“): Regeln und Tabellen als Formular. Aktion, Richtung, Interface (aus `ifconfig`, plus `egress`), Protokoll, Von/Nach (beliebig, `self`, vorhandene Tabellen, Adresse oder Netz), Zielports (Dienstliste oder Zahlen, Bereiche), `quick`, `log`, Reihenfolge per Pfeil und die Regel als Klartext direkt darunter. maar verwaltet einen Block in `/etc/pf.conf` vor dem Anker für die VM-Netze; die bestehenden Regeln werden angezeigt und bleiben unberührt. Neue Tabellen dürfen keine vorhandene überdecken.
+
+Damit man sich nicht aussperrt, gelten neue Regeln **auf Probe**: Nach dem Laden hast du 60 Sekunden, sie zu bestätigen – wenn die Seite nach dem Laden noch antwortet, ist das der Beweis, dass du noch durchkommst. Ohne Bestätigung stellt maar den alten Regelsatz selbst wieder her; das gilt auch, wenn maard in der Zwischenzeit beendet wird (Wiederherstellung beim Start). Regeln, die die Oberfläche oder SSH sperren könnten, bekommen eine Warnung. Bei mehreren passenden Regeln gilt in pf die letzte, außer eine passende ist `quick`.
+
+**doas** (Zeit, Namen & SSH → „Rechte (doas)“): Regeln mit Auswahl für Konto oder Gruppe (`:wheel`), Zielbenutzer, Befehl (Programme, die es auf dem Host gibt, oder eigener Pfad), Argumente und die Optionen `nopass`, `persist`, `keepenv`, `nolog`; unter jeder Regel steht sie als deutscher Satz. Die Reihenfolge bleibt erhalten, Beschreibungen (Kommentare) wandern mit der Regel, Regeln mit `setenv` bleiben als Rohtext unverändert. `doas -C` prüft vor dem Speichern. Warnungen gibt es für `nopass` ohne Befehl, relative Befehle (doas vergleicht sie buchstäblich) und wenn du dir selbst die Rechte entziehst.
+
 ## Rollen und Ereignisse
 
 Die Gruppe (`-group`, Standard `wheel`) entscheidet, wer sich anmelden darf; die Rolle, was danach erlaubt ist. Konten ohne Eintrag erhalten die Standardrolle (anfangs Administrator).

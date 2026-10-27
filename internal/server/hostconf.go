@@ -1,6 +1,8 @@
 package server
 
 import (
+	"fmt"
+	"net"
 	"net/http"
 
 	"github.com/thorin-eifel/maar/internal/obsd"
@@ -21,6 +23,10 @@ func (s *Server) confGet(w http.ResponseWriter, r *http.Request) {
 		v, err = s.Host.Hosts(r.Context())
 	case "ssh":
 		v, err = s.Host.SSH(r.Context())
+	case "pf":
+		v, err = s.Host.PFForm(r.Context())
+	case "doas":
+		v, err = s.Host.Doas(r.Context())
 	default:
 		jsonErr(w, http.StatusNotFound, "Unbekannte Konfiguration")
 		return
@@ -62,6 +68,18 @@ func (s *Server) confPut(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		res, err = s.Host.SaveSSH(r.Context(), sessionFrom(r).User, &c, preview)
+	case "pf":
+		var c obsd.PFManaged
+		if !decode(w, r, &c) {
+			return
+		}
+		res, err = s.Host.SavePF(r.Context(), &c, s.pfGuard(r), preview)
+	case "doas":
+		var c obsd.DoasConf
+		if !decode(w, r, &c) {
+			return
+		}
+		res, err = s.Host.SaveDoas(r.Context(), sessionFrom(r).User, &c, preview)
 	default:
 		jsonErr(w, http.StatusNotFound, "Unbekannte Konfiguration")
 		return
@@ -70,4 +88,40 @@ func (s *Server) confPut(w http.ResponseWriter, r *http.Request) {
 		s.audit(r, err, "Konfiguration %s gespeichert", kind)
 	}
 	respond(w, res, err)
+}
+
+// pfGuard nennt die Ports, über die diese Sitzung und SSH laufen – Regeln, die sie sperren könnten, bekommen eine Warnung.
+func (s *Server) pfGuard(r *http.Request) []obsd.PFGuard {
+	var g []obsd.PFGuard
+	if a, ok := r.Context().Value(http.LocalAddrContextKey).(net.Addr); ok {
+		if _, p, err := net.SplitHostPort(a.String()); err == nil {
+			var n int
+			fmt.Sscan(p, &n)
+			if n > 0 {
+				g = append(g, obsd.PFGuard{Port: n, Label: "diese Oberfläche"})
+			}
+		}
+	}
+	if v, err := s.Host.SSH(r.Context()); err == nil {
+		ports := v.Conf.Ports
+		if len(ports) == 0 {
+			ports = []int{22}
+		}
+		for _, p := range ports {
+			g = append(g, obsd.PFGuard{Port: p, Label: "SSH"})
+		}
+	}
+	return g
+}
+
+func (s *Server) pfConfirm(w http.ResponseWriter, r *http.Request) {
+	err := s.Host.PFConfirm(r.Context())
+	s.audit(r, err, "Paketfilter-Regeln bestätigt")
+	respond(w, msg{Message: "Die neuen Regeln sind dauerhaft."}, err)
+}
+
+func (s *Server) pfRevert(w http.ResponseWriter, r *http.Request) {
+	err := s.Host.PFRevert(r.Context(), false)
+	s.audit(r, err, "Paketfilter-Änderung zurückgenommen")
+	respond(w, msg{Message: "Der vorherige Regelsatz ist wieder geladen."}, err)
 }

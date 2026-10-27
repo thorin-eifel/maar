@@ -97,6 +97,8 @@ func (s *Server) Handler() http.Handler {
 	api("POST /api/vms/{name}/clone", s.deploy("vm"))
 	api("GET /api/conf/{kind}", s.confGet)
 	api("PUT /api/conf/{kind}", s.confPut)
+	api("POST /api/conf/pf/confirm", s.pfConfirm)
+	api("POST /api/conf/pf/revert", s.pfRevert)
 	api("GET /api/vm-options", s.vmOptions)
 	api("GET /api/vms/{name}/options", s.vmOptions)
 	api("PUT /api/vms/{name}/settings", s.vmSettings)

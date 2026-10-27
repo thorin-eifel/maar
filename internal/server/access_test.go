@@ -102,6 +102,9 @@ func TestRolesAndEvents(t *testing.T) {
 	if code, _ := do(t, c, "GET", ts.URL+"/api/services", csrf, ""); code != 200 {
 		t.Errorf("viewer lesen: %d", code)
 	}
+	if code, _ := do(t, c, "POST", ts.URL+"/api/conf/pf/confirm", csrf, ""); code != http.StatusForbidden {
+		t.Errorf("viewer bestätigt pf: %d", code)
+	}
 	if code, _ := do(t, c, "GET", ts.URL+"/api/conf/ssh", csrf, ""); code != http.StatusForbidden {
 		t.Errorf("viewer liest sshd-Formular: %d", code)
 	}
@@ -133,6 +136,18 @@ func TestRolesAndEvents(t *testing.T) {
 	}
 	if code, out := do(t, c, "PUT", ts.URL+"/api/conf/ssh", csrf, `{"allowUsers":["thorin"]}`); code != 400 || !strings.Contains(out, "aussperren") {
 		t.Errorf("ssh Aussperrschutz (demo nicht in AllowUsers): %d %.200s", code, out)
+	}
+	if code, out := do(t, c, "PUT", ts.URL+"/api/conf/pf?preview=1", csrf, `{"rules":[{"action":"block","dir":"in","proto":"tcp","to":"self","ports":"22","quick":true}]}`); code != 200 || !strings.Contains(out, "block in quick proto tcp to self port 22") || !strings.Contains(out, "SSH (Port 22)") {
+		t.Errorf("pf Vorschau mit Warnung: %d %.300s", code, out)
+	}
+	if code, _ := do(t, c, "PUT", ts.URL+"/api/conf/pf", csrf, `{"rules":[{"action":"pass","iface":"evil9"}]}`); code != 400 {
+		t.Errorf("pf unbekanntes Interface: %d", code)
+	}
+	if code, out := do(t, c, "GET", ts.URL+"/api/conf/doas", csrf, ""); code != 200 || !strings.Contains(out, ":wheel") {
+		t.Errorf("doas lesen: %d %.100s", code, out)
+	}
+	if code, _ := do(t, c, "POST", ts.URL+"/api/conf/pf/revert", csrf, ""); code != 400 {
+		t.Errorf("Rücknahme ohne ausstehende Änderung: %d", code)
 	}
 	if code, _ := do(t, c, "GET", ts.URL+"/api/conf/gibtsnicht", csrf, ""); code != 404 {
 		t.Errorf("unbekannte Konfiguration: %d", code)
